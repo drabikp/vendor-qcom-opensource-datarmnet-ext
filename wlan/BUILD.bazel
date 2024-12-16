@@ -7,6 +7,9 @@ define_wlan("sun", "perf")
 define_wlan("canoe", "consolidate")
 define_wlan("canoe", "perf")
 
+define_wlan("vienna", "consolidate")
+define_wlan("vienna", "perf")
+
 ddk_headers(
     name = "include_headers",
     hdrs = glob([

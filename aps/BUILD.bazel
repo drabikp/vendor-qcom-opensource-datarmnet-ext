@@ -7,6 +7,9 @@ define_aps("sun", "perf")
 define_aps("canoe", "consolidate")
 define_aps("canoe", "perf")
 
+define_aps("vienna", "consolidate")
+define_aps("vienna", "perf")
+
 ddk_headers(
     name = "include_headers",
     hdrs = glob([

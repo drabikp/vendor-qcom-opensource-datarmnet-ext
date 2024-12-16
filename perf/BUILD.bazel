@@ -7,6 +7,9 @@ define_perf("sun", "perf")
 define_perf("canoe", "consolidate")
 define_perf("canoe", "perf")
 
+define_perf("vienna", "consolidate")
+define_perf("vienna", "perf")
+
 ddk_headers(
     name = "include_headers",
     hdrs = glob([
