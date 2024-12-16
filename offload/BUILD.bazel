@@ -6,3 +6,6 @@ define_offload("sun", "perf")
 
 define_offload("canoe", "consolidate")
 define_offload("canoe", "perf")
+
+define_offload("vienna", "consolidate")
+define_offload("vienna", "perf")
