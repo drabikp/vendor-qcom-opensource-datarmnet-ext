@@ -5,15 +5,25 @@ def define_sch(target, variant):
     kernel_build_variant = "{}_{}".format(target, variant)
     include_base = "../../../{}".format(native.package_name())
 
+    deps_sch = select({
+	"//build/kernel/kleaf:socrepo_true": ["//soc-repo:all_headers"],
+	"//build/kernel/kleaf:socrepo_false": ["//msm-kernel:all_headers"],
+    })
+
+    kernel_build = select({
+	"//build/kernel/kleaf:socrepo_true": "//soc-repo:{}_base_kernel".format(kernel_build_variant),
+	"//build/kernel/kleaf:socrepo_false": "//msm-kernel:{}".format(kernel_build_variant),
+    })
+
     ddk_module(
         name = "{}_sch".format(kernel_build_variant),
         out = "rmnet_sch.ko",
         srcs = [
             "rmnet_sch_main.c",
         ],
-        deps = ["//msm-kernel:all_headers"],
+        deps = deps_sch,
         copts = ["-Wno-misleading-indentation"],
-        kernel_build = "//msm-kernel:{}".format(kernel_build_variant),
+        kernel_build = kernel_build,
     )
 
     copy_to_dist_dir(

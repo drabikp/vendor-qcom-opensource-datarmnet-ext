@@ -5,6 +5,16 @@ def define_mem(target, variant):
     kernel_build_variant = "{}_{}".format(target, variant)
     include_base = "../../../{}".format(native.package_name())
 
+    deps_mem = select({
+	"//build/kernel/kleaf:socrepo_true": ["//soc-repo:all_headers"],
+	"//build/kernel/kleaf:socrepo_false": ["//msm-kernel:all_headers"],
+    })
+
+    kernel_build = select({
+	"//build/kernel/kleaf:socrepo_true": "//soc-repo:{}_base_kernel".format(kernel_build_variant),
+	"//build/kernel/kleaf:socrepo_false": "//msm-kernel:{}".format(kernel_build_variant),
+    })
+
     ddk_module(
         name = "{}_rmnet_mem".format(kernel_build_variant),
         out = "rmnet_mem.ko",
@@ -17,10 +27,8 @@ def define_mem(target, variant):
             "rmnet_mem_pool.c",
             "rmnet_mem_priv.h",
         ],
-        kernel_build = "//msm-kernel:{}".format(kernel_build_variant),
-        deps = [
-            "//msm-kernel:all_headers",
-        ],
+        kernel_build = kernel_build,
+        deps = deps_mem,
         copts = ["-Wno-misleading-indentation"],
     )
 
