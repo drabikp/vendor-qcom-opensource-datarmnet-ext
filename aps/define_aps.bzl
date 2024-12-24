@@ -5,6 +5,16 @@ def define_aps(target, variant):
     kernel_build_variant = "{}_{}".format(target, variant)
     include_base = "../../../{}".format(native.package_name())
 
+    deps_aps = select({
+	"//build/kernel/kleaf:socrepo_true": ["//soc-repo:all_headers"],
+	"//build/kernel/kleaf:socrepo_false": ["//msm-kernel:all_headers"],
+    })
+
+    kernel_build = select({
+	"//build/kernel/kleaf:socrepo_true": "//soc-repo:{}_base_kernel".format(kernel_build_variant),
+	"//build/kernel/kleaf:socrepo_false": "//msm-kernel:{}".format(kernel_build_variant),
+    })
+
     ddk_module(
         name = "{}_aps".format(kernel_build_variant),
         out = "rmnet_aps.ko",
@@ -14,9 +24,8 @@ def define_aps(target, variant):
             "rmnet_aps.h",
             "rmnet_aps_genl.h",
         ],
-        kernel_build = "//msm-kernel:{}".format(kernel_build_variant),
-        deps = [
-            "//msm-kernel:all_headers",
+        kernel_build = kernel_build,
+        deps = deps_aps + [
             "//vendor/qcom/opensource/datarmnet:{}_rmnet_core".format(kernel_build_variant),
             "//vendor/qcom/opensource/datarmnet:rmnet_core_headers",
         ],
