@@ -10,10 +10,13 @@
 #include <linux/if.h>
 #include <linux/inet.h>
 #include <linux/netdevice.h>
-#include "rmnet_wlan_genl.h"
+#include <uapi/linux/rmnet_wlan.h>
 #include "rmnet_wlan.h"
 #include "rmnet_wlan_connection.h"
 #include "rmnet_wlan_fragment.h"
+
+#define RMNET_WLAN_GENL_ATTR_MAX RMNET_WLAN_GENL_ATTR_LL_DST_PORT
+#define RMNET_WLAN_GENL_TUPLE_ATTR_MAX RMNET_WLAN_GENL_TUPLE_ATTR_TUPLE
 
 /* Use integer 58 instead of ':' to avoid issues with scripts */
 #define RMNET_WLAN_CHAR_COLON 58
