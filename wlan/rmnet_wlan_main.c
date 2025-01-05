@@ -18,7 +18,6 @@
 #include <linux/hashtable.h>
 #include <linux/log2.h>
 #include <linux/netdevice.h>
-#include "rmnet_wlan_genl.h"
 #include "rmnet_wlan.h"
 #include "rmnet_wlan_stats.h"
 #include "rmnet_wlan_fragment.h"

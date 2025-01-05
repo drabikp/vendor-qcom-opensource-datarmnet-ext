@@ -11,15 +11,7 @@
 #include <net/genetlink.h>
 #include <linux/netdevice.h>
 #include <linux/in6.h>
-
-struct rmnet_wlan_tuple {
-	union {
-	  __be16 port;
-	  __be32 spi_val;
-	};
-	u8 ip_proto;
-	u8 trans_proto;
-};
+#include <uapi/linux/rmnet_wlan.h>
 
 struct rmnet_wlan_fwd_info {
 	struct net_device *fwd_dev;
@@ -52,13 +44,6 @@ struct rmnet_wlan_ll_tuple {
 	__be16 sport;
 	__be16 dport;
 	u8 ip_proto;
-};
-
-enum {
-	DATA_PATH_PROXY_NET_WLAN,
-	DATA_PATH_PROXY_NET_WWAN,
-	DATA_PATH_PROXY_NET_LBO,
-	__DATA_PATH_PROXY_NET_MAX,
 };
 
 rx_handler_result_t rmnet_wlan_rx_handler(struct sk_buff **pskb);
