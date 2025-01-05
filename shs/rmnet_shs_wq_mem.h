@@ -1,87 +1,180 @@
-/* Copyright (c) 2019-2020 The Linux Foundation. All rights reserved.
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 and
- * only version 2 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+ * Copyright (c) 2019-2021 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2022-2023, 2025 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
-#ifndef DATARMNETe10fe0b1e0
-#define DATARMNETe10fe0b1e0
+#ifndef _RMNET_SHS_WQ_MEM_H_
+#define _RMNET_SHS_WQ_MEM_H_
+
 #include "rmnet_shs.h"
 #include "rmnet_shs_config.h"
-#define DATARMNET6517f07a36      "\x73\x68\x73"
-#define DATARMNET41be983a65     \
-"\x72\x6d\x6e\x65\x74\x5f\x73\x68\x73\x5f\x63\x61\x70\x73"
-#define DATARMNET5ddc91451c  \
-"\x72\x6d\x6e\x65\x74\x5f\x73\x68\x73\x5f\x66\x6c\x6f\x77\x73"
-#define DATARMNETeb2a21dd7c \
-"\x72\x6d\x6e\x65\x74\x5f\x73\x68\x73\x5f\x73\x73\x5f\x66\x6c\x6f\x77\x73"
-#define DATARMNET1c4ea23858   \
-"\x72\x6d\x6e\x65\x74\x5f\x73\x68\x73\x5f\x66\x66\x6c\x6f\x77\x73"
-#define DATARMNET8b29e14112   \
-"\x72\x6d\x6e\x65\x74\x5f\x73\x68\x73\x5f\x6c\x6c\x5f\x66\x6c\x6f\x77\x73"
-#define DATARMNETe98d39b779   \
-"\x72\x6d\x6e\x65\x74\x5f\x73\x68\x73\x5f\x6e\x65\x74\x64\x65\x76"
-#define DATARMNET67578af78f ((0xec7+1108-0x12fd))
-#define DATARMNETa847b6b6d0 (DATARMNET67578af78f)
-#define DATARMNET75c69edb82 ((0xeb7+698-0x110d))
-#define DATARMNETe4d15b9332 ((0xec7+1166-0x132d))
-#define DATARMNET9ae5f81f71 ((0xeb7+1158-0x132d))
-#define DATARMNET29d29f44cf ((0xd2d+202-0xdf7))
-struct __attribute__((__packed__))DATARMNET33582f7450{u64 DATARMNET18b7a5b761;
-u64 DATARMNET4da6031170;u64 DATARMNET4df302dbd6;u16 DATARMNET42a992465f;u8 
-DATARMNETf510b48c29;};struct __attribute__((__packed__))DATARMNET661e7a8566{int 
-DATARMNET68a58889b0[(0xd18+223-0xdf4)];int DATARMNET1c7c913c7b[(0xd18+223-0xdf4)
-];};struct __attribute__((__packed__))DATARMNETf44cda1bf2{u64 
-DATARMNET324c1a8f98;u64 DATARMNET253a9fc708;u64 DATARMNETbb80fccd97;u32 hash;u16
- DATARMNET42a992465f;};struct __attribute__((__packed__))DATARMNET3a84fbfeae{u64
- DATARMNET324c1a8f98;u64 DATARMNET253a9fc708;u64 DATARMNETbb80fccd97;u32 hash;
-u32 bif;u32 ack_thresh;u16 DATARMNET42a992465f;};struct __attribute__((
-__packed__))DATARMNET26737fb11e{union{struct iphdr DATARMNETac9bbaad7c;struct 
-ipv6hdr DATARMNET1688a97aa4;}ip_hdr;union{struct tcphdr tp;struct udphdr up;}
-DATARMNETe33b41dad9;u64 DATARMNET324c1a8f98;u64 DATARMNET253a9fc708;u64 
-DATARMNETbb80fccd97;u64 DATARMNET95266642d1;u64 DATARMNET0d682bcb29;u64 
-DATARMNET20e8fc9db8;u32 hash;u16 DATARMNET42a992465f;u16 trans_proto;u8 mux_id;
-u8 DATARMNETda8e8ae7ed;};struct __attribute__((__packed__))DATARMNETc13d990bf1{
-union{struct iphdr DATARMNETac9bbaad7c;struct ipv6hdr DATARMNET1688a97aa4;}
-ip_hdr;union{struct tcphdr tp;struct udphdr up;}DATARMNETe33b41dad9;u64 
-DATARMNET324c1a8f98;u64 DATARMNET253a9fc708;u64 DATARMNETbb80fccd97;u64 
-DATARMNET95266642d1;u64 DATARMNET0d682bcb29;u64 DATARMNET20e8fc9db8;u32 hash;u16
- DATARMNET42a992465f;u16 trans_proto;u8 mux_id;};struct __attribute__((
-__packed__))DATARMNET57ccbe14f3{char name[DATARMNET9ae5f81f71];u64 
-DATARMNET77de6e34f2;u64 hw_evict;u64 DATARMNET870c3dafcb;u64 coal_tcp;u64 
-coal_tcp_bytes;u64 coal_udp;u64 coal_udp_bytes;u64 DATARMNET257fc4b2d4;u64 
-DATARMNET4eb77c78e6;u64 pb_marker_seq;u8 mux_id;};extern struct list_head 
-DATARMNET6c23f11e81;extern struct list_head DATARMNETf91b305f4e;extern struct 
-list_head DATARMNET3208cd0982;extern struct list_head DATARMNET922b4752e2;extern
- struct list_head DATARMNETe46ae760db;enum{DATARMNETbd4083a6a4=
-(0x24f5+499-0x16e8)};struct DATARMNETa41d4c4a12{char*data;refcount_t refcnt;};
-void DATARMNET28a80d526e(struct DATARMNET6c78e47d24*DATARMNETd2a694d52a,struct 
-list_head*DATARMNETf0fb155a9c);void DATARMNET24e4475345(struct 
-DATARMNET6c78e47d24*DATARMNETd2a694d52a,struct list_head*DATARMNETb436c3f30b);
-void DATARMNET6f4b0915d3(struct DATARMNET6c78e47d24*DATARMNETd2a694d52a,struct 
-list_head*DATARMNET3208cd0982);void DATARMNET312b06829d(struct 
-DATARMNET6c78e47d24*DATARMNETd2a694d52a,struct list_head*DATARMNET922b4752e2);
-void DATARMNETa1b141715b(struct list_head*DATARMNETb436c3f30b);void 
-DATARMNET3af54cd726(struct list_head*DATARMNETf0fb155a9c);void 
-DATARMNETcc489fbbad(struct list_head*DATARMNET3208cd0982);void 
-DATARMNETf7730d41c1(struct list_head*DATARMNET922b4752e2);void 
-DATARMNETc6439e3d71(struct DATARMNETc8fdbf9c85*DATARMNET7bea4a06a6,struct 
-DATARMNET228056d4b7*DATARMNETf632b170b1,struct list_head*DATARMNETe46ae760db);
-void DATARMNETb177316a15(struct list_head*DATARMNETe46ae760db);void 
-DATARMNET5157210c44(struct list_head*DATARMNETe46ae760db);void 
-DATARMNET0e273eab79(struct list_head*DATARMNETb436c3f30b);void 
-DATARMNETe15af8eb6d(struct list_head*DATARMNETf0fb155a9c);void 
-DATARMNET78f3a0ca4f(struct list_head*DATARMNET3208cd0982);void 
-DATARMNETa3d6c4072d(struct list_head*DATARMNET922b4752e2);void 
-DATARMNET78666f33a1(void);void DATARMNETf5f83b943f(void);void 
-DATARMNET28d33bd09f(void);
-#endif 
 
+/* Shared memory files */
+#define RMNET_SHS_PROC_DIR      "shs"
+#define RMNET_SHS_PROC_CAPS     "rmnet_shs_caps"
+#define RMNET_SHS_PROC_G_FLOWS  "rmnet_shs_flows"
+#define RMNET_SHS_PROC_SS_FLOWS "rmnet_shs_ss_flows"
+#define RMNET_SHS_PROC_FFLOWS   "rmnet_shs_fflows"
+#define RMNET_SHS_PROC_LL_FLOWS   "rmnet_shs_ll_flows"
+#define RMNET_SHS_PROC_NETDEV   "rmnet_shs_netdev"
+
+#define RMNET_SHS_NUM_TOP_FFLOWS (30)
+#define RMNET_SHS_NUM_TOP_LL_FLOWS (RMNET_SHS_NUM_TOP_FFLOWS)
+
+#define RMNET_SHS_MAX_USRFLOWS (100)
+#define RMNET_SHS_MAX_NETDEVS (40)
+#define RMNET_SHS_IFNAMSIZ (16)
+#define RMNET_SHS_READ_VAL (0)
+
+/* NOTE: Make sure these structs fit in one page */
+/* 26 bytes * 8 max cpus = 208 bytes < 4096 */
+struct __attribute__((__packed__)) rmnet_shs_wq_cpu_cap_usr_s {
+	u64 pps_capacity;
+	u64 avg_pps_capacity;
+	u64 bps;
+	u16 cpu_num;
+	u8 perf_mask;
+};
+
+struct __attribute__((__packed__)) rmnet_shs_wq_additional_stats_s {
+	/* Stats from include/net/netns/ipv4.h => struct netns_ipv4 */
+	int ipv4_tcp_rmem[3]; /* init_net.ipv4.sysctl_tcp_rmem[] */
+	int ipv4_tcp_wmem[3]; /* init_net.ipv4.sysctl_tcp_wmem[] */
+};
+
+/* 30 bytes * 128 max = 3840 bytes < 4096 */
+struct __attribute__((__packed__)) rmnet_shs_wq_gflows_usr_s {
+	u64 rx_pps;
+	u64 avg_pps;
+	u64 rx_bps;
+	u32 hash;
+	u16 cpu_num;
+};
+
+/* 38 bytes * 100 max = 3800 bytes < 4096 */
+struct __attribute__((__packed__)) rmnet_shs_wq_ssflows_usr_s {
+	u64 rx_pps;
+	u64 avg_pps;
+	u64 rx_bps;
+	u32 hash;
+	u32 bif; /* Bytes in flight */
+	u32 ack_thresh;
+	u16 cpu_num;
+};
+
+/* 30 max < 4096 */
+struct __attribute__((__packed__)) rmnet_shs_wq_ll_flows_usr_s {
+	union {
+		struct iphdr   v4hdr;
+		struct ipv6hdr v6hdr;
+	} ip_hdr;
+	union {
+		struct tcphdr tp;
+		struct udphdr up;
+	} trans_hdr;
+	u64 rx_pps;
+	u64 avg_pps;
+	u64 rx_bps;
+	u64 avg_segs;
+	u64 hw_coal_bytes_diff;
+	u64 hw_coal_bufsize_diff;
+	u32 hash;
+	u16 cpu_num;
+	u16 trans_proto;
+	u8  mux_id;
+	u8  ll_pipe;
+};
+
+/* 30 max < 4096 */
+struct __attribute__((__packed__)) rmnet_shs_wq_fflows_usr_s {
+	union {
+		struct iphdr   v4hdr;
+		struct ipv6hdr v6hdr;
+	} ip_hdr;
+	union {
+		struct tcphdr tp;
+		struct udphdr up;
+	} trans_hdr;
+	u64 rx_pps;
+	u64 avg_pps;
+	u64 rx_bps;
+	u64 avg_segs;
+	u64 hw_coal_bytes_diff;
+	u64 hw_coal_bufsize_diff;
+	u32 hash;
+	u16 cpu_num;
+	u16 trans_proto;
+	u8  mux_id;
+};
+
+/* 16 + 8*10 + 1 = 97 bytes, 97*40 netdev = 3880 bytes < 4096 */
+struct __attribute__((__packed__)) rmnet_shs_wq_netdev_usr_s {
+	char name[RMNET_SHS_IFNAMSIZ];
+	u64  coal_ip_miss;
+	u64  hw_evict;
+	u64  coal_rx_pkts;
+	u64  coal_tcp;
+	u64  coal_tcp_bytes;
+	u64  coal_udp;
+	u64  coal_udp_bytes;
+	u64  udp_rx_bps;
+	u64  tcp_rx_bps;
+	u64  pb_marker_seq;
+	u8   mux_id;
+};
+
+extern struct list_head gflows;
+extern struct list_head ssflows;
+extern struct list_head fflows;
+extern struct list_head ll_flows;
+
+extern struct list_head cpu_caps;
+
+/* Buffer size for read and write syscalls */
+enum {RMNET_SHS_BUFFER_SIZE = 4096};
+
+struct rmnet_shs_mmap_info {
+	char *data;
+	refcount_t refcnt;
+};
+
+/* Function Definitions */
+
+void rmnet_shs_wq_ssflow_list_add(struct rmnet_shs_wq_hstat_s *hnode,
+				  struct list_head *ss_flows);
+void rmnet_shs_wq_gflow_list_add(struct rmnet_shs_wq_hstat_s *hnode,
+				 struct list_head *gold_flows);
+void rmnet_shs_wq_fflow_list_add(struct rmnet_shs_wq_hstat_s *hnode,
+				  struct list_head *fflows);
+void rmnet_shs_wq_ll_flow_list_add(struct rmnet_shs_wq_hstat_s *hnode,
+				 struct list_head *ll_flows);
+
+
+
+void rmnet_shs_wq_cleanup_gold_flow_list(struct list_head *gold_flows);
+void rmnet_shs_wq_cleanup_ss_flow_list(struct list_head *ss_flows);
+void rmnet_shs_wq_cleanup_fflow_list(struct list_head *fflows);
+void rmnet_shs_wq_cleanup_ll_flow_list(struct list_head *ll_flows);
+
+
+void rmnet_shs_wq_cpu_caps_list_add(
+				struct rmnet_shs_wq_rx_flow_s *rx_flow_tbl_p,
+				struct rmnet_shs_wq_cpu_rx_pkt_q_s *cpu_node,
+				struct list_head *cpu_caps);
+
+void rmnet_shs_wq_cleanup_cpu_caps_list(struct list_head *cpu_caps);
+
+void rmnet_shs_wq_mem_update_cached_cpu_caps(struct list_head *cpu_caps);
+
+void rmnet_shs_wq_mem_update_cached_sorted_gold_flows(struct list_head *gold_flows);
+void rmnet_shs_wq_mem_update_cached_sorted_ss_flows(struct list_head *ss_flows);
+void rmnet_shs_wq_mem_update_cached_sorted_fflows(struct list_head *fflows);
+void rmnet_shs_wq_mem_update_cached_sorted_ll_flows(struct list_head *ll_flows);
+void rmnet_shs_wq_mem_update_cached_netdevs(void);
+
+void rmnet_shs_wq_mem_init(void);
+
+void rmnet_shs_wq_mem_deinit(void);
+
+#endif /*_RMNET_SHS_WQ_GENL_H_*/
