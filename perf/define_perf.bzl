@@ -27,6 +27,7 @@ def define_perf(target, variant):
         ],
         kernel_build = kernel_build,
         deps = deps_perf + [
+            ":include_headers",
             "//vendor/qcom/opensource/datarmnet:{}_rmnet_core".format(kernel_build_variant),
             "//vendor/qcom/opensource/datarmnet:rmnet_core_headers",
         ],

@@ -11,23 +11,25 @@
 #include <linux/ipv6.h>
 #include <net/ip.h>
 #include <net/ipv6.h>
-#include "rmnet_module.h"
 #include <net/ipv6.h>
 #include <net/ip.h>
+#include <net/genetlink.h>
 
-#include "rmnet_perf_tcp.h"
-#include "rmnet_perf_udp.h"
+#include <uapi/linux/rmnet_perf_stats.h>
 
+#include "rmnet_module.h"
 #include "rmnet_descriptor.h"
 #include "rmnet_map.h"
 #include "rmnet_qmap.h"
 
-#include <net/genetlink.h>
+#include "rmnet_perf_tcp.h"
+#include "rmnet_perf_udp.h"
 
 MODULE_LICENSE("GPL v2");
 
 /* Insert newest first, last 4 bytes of the change id */
 static char *verinfo[] = {
+	"173bc5b9",
 	"71b2019d",
 	"1a5fa493",
 	"58aa9bee",
@@ -41,29 +43,7 @@ static char *verinfo[] = {
 	"7f078f96"
 };
 
-#define RMNET_PERF_GENL_FAMILY_NAME "RMNET_PERF"
-#define RMNET_PERF_GENL_MULTICAST_NAME_0 "RMNET_PERF_MC_0"
-#define RMNET_PERF_GENL_MULTICAST_NAME_1 "RMNET_PERF_MC_1"
-#define RMNET_PERF_GENL_MULTICAST_NAME_2 "RMNET_PERF_MC_2"
-#define RMNET_PERF_GENL_MULTICAST_NAME_3 "RMNET_PERF_MC_3"
 #define RMNET_PERF_GENL_VERSION 1
-
-enum {
-	RMNET_PERF_CMD_UNSPEC,
-	RMNET_PERF_CMD_GET_STATS,
-	RMNET_PERF_CMD_MAP_CMD,
-	__RMNET_PERF_GENL_CMD_MAX,
-};
-
-enum {
-	RMNET_PERF_ATTR_UNSPEC,
-	RMNET_PERF_ATTR_STATS_REQ,
-	RMNET_PERF_ATTR_STATS_RESP,
-	RMNET_PERF_ATTR_MAP_CMD_REQ,
-	RMNET_PERF_ATTR_MAP_CMD_RESP,
-	RMNET_PERF_ATTR_MAP_CMD_IND,
-	__RMNET_PERF_ATTR_MAX,
-};
 
 enum {
 	RMNET_PERF_MULTICAST_GROUP_0,
@@ -73,76 +53,7 @@ enum {
 	__RMNET_PERF_MULTICAST_GROUP_MAX,
 };
 
-#define RMNET_PERF_ATTR_MAX (__RMNET_PERF_ATTR_MAX - 1)
-
-struct rmnet_perf_stats_req {
-	u8 mux_id;
-} __aligned(1);
-
-struct rmnet_perf_proto_stats {
-	u64 tcpv4_pkts;
-	u64 tcpv4_bytes;
-	u64 udpv4_pkts;
-	u64 udpv4_bytes;
-	u64 tcpv6_pkts;
-	u64 tcpv6_bytes;
-	u64 udpv6_pkts;
-	u64 udpv6_bytes;
-} __aligned(1);
-
-struct rmnet_perf_coal_common_stats {
-	u64 csum_error;
-	u64 pkt_recons;
-	u64 close_non_coal;
-	u64 l3_mismatch;
-	u64 l4_mismatch;
-	u64 nlo_limit;
-	u64 pkt_limit;
-	u64 byte_limit;
-	u64 time_limit;
-	u64 eviction;
-	u64 close_coal;
-} __aligned(1);
-
-struct downlink_stats {
-	struct rmnet_perf_coal_common_stats coal_common_stats;
-	struct rmnet_perf_proto_stats coal_veid_stats[16];
-	u64 non_coal_pkts;
-	u64 non_coal_bytes;
-} __aligned(1);
-
-struct uplink_stats {
-	struct rmnet_perf_proto_stats seg_proto_stats;
-} __aligned(1);
-
-struct rmnet_perf_stats_store {
-	struct downlink_stats dl_stats;
-	struct uplink_stats ul_stats;
-} __aligned(1);
-
-struct rmnet_perf_stats_resp {
-	u16 error_code;
-	struct rmnet_perf_stats_store stats;
-} __aligned(1);
-
-struct rmnet_perf_map_cmd_req {
-	u16 cmd_len;
-	u8 cmd_name;
-	u8 ack;
-	u8 cmd_content[16384];
-} __aligned(1);
-
-struct rmnet_perf_map_cmd_resp {
-	u8 cmd_name;
-	u16 error_code;
-} __aligned(1);
-
-struct rmnet_perf_map_cmd_ind {
-	u16 cmd_len;
-	u8 cmd_name;
-	u8 ack;
-	u8 cmd_content[4096];
-} __aligned(1);
+#define RMNET_PERF_ATTR_MAX RMNET_PERF_ATTR_MAP_CMD_IND
 
 static struct nla_policy rmnet_perf_nl_policy[RMNET_PERF_ATTR_MAX + 1] = {
 	[RMNET_PERF_ATTR_STATS_REQ] = NLA_POLICY_EXACT_LEN(sizeof(struct rmnet_perf_stats_req)),
