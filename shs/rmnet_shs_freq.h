@@ -13,7 +13,6 @@ void rmnet_shs_boost_cpus(void);
 void rmnet_shs_reset_cpus(void);
 void rmnet_shs_pb_boost_cpus(void);
 void rmnet_shs_pb_reset_cpus(void);
-
 void rmnet_shs_boost_gold_cpu(int cpu);
 
 #endif

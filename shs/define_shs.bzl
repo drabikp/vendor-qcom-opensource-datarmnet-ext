@@ -44,6 +44,7 @@ def define_shs(target, variant):
         ],
 	kernel_build = kernel_build,
 	deps = deps_shs + [
+		":include_headers",
 		"//vendor/qcom/opensource/datarmnet:{}_rmnet_core".format(kernel_build_variant),
 		"//vendor/qcom/opensource/datarmnet:rmnet_core_headers",
         ],

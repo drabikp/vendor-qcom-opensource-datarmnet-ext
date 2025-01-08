@@ -18,6 +18,8 @@
 
 #include "rmnet_shs.h"
 #include "rmnet_shs_wq_genl.h"
+#include <uapi/linux/rmnet_shs.h>
+
 #include "rmnet_shs_config.h"
 #include "rmnet_shs_wq.h"
 #include "rmnet_shs_modules.h"
@@ -423,29 +425,29 @@ void rmnet_shs_print_llflow(struct rmnet_shs_wq_flow_node  *node)
 {
 	struct rmnet_shs_wq_flow_info  *info = &node->info;
 
-	pr_info("SHS_LL: proto valid %u src addr valid %u, dest addr valid %u, dest port valid %u, srcport valid %u, ip version %u seq %u",
+	pr_info("SHS_LL: proto valid %u src addr valid %u, dest addr valid %u, dest port valid %u, srcport valid %u, ip version %u seq %u\n",
 		info->proto_valid, info->src_addr_valid, info->dest_addr_valid,
 		info->dest_port_valid, info->src_port_valid, info->ip_version, info->seq);
 
-	pr_info("SHS_LL: info->ip_version %u", info->ip_version );
-	pr_info("SHS_LL: info->proto %u", info->proto );
-	pr_info("SHS_LL: info->dest_port %u", info->dest_port );
-	pr_info("SHS_LL: info->src_port %u", info->src_port );
-	pr_info("SHS_LL: info->dest_addr_valid %u", info->dest_addr_valid);
-	pr_info("SHS_LL: info->src_addr_valid %u", info->src_addr_valid);
-	pr_info("SHS_LL: info->seq %u", info->seq);
+	pr_info("SHS_LL: info->ip_version %u\n", info->ip_version );
+	pr_info("SHS_LL: info->proto %u\n", info->proto );
+	pr_info("SHS_LL: info->dest_port %u\n", info->dest_port );
+	pr_info("SHS_LL: info->src_port %u\n", info->src_port );
+	pr_info("SHS_LL: info->dest_addr_valid %u\n", info->dest_addr_valid);
+	pr_info("SHS_LL: info->src_addr_valid %u\n", info->src_addr_valid);
+	pr_info("SHS_LL: info->seq %u\n", info->seq);
 
 	if (info->ip_version == 4 && (info->dest_addr_valid) && (info->src_addr_valid )) {
-		pr_info("New flow info->dest_addr_valid %u ", info->dest_ip_addr.daddr);
-		pr_info("New flow info->src_addr_valid %u",  info->src_ip_addr.saddr);
+		pr_info("New flow info->dest_addr_valid %u\n", info->dest_ip_addr.daddr);
+		pr_info("New flow info->src_addr_valid %u\n",  info->src_ip_addr.saddr);
 	}
 	if (info->ip_version == 6 && (info->dest_addr_valid) && (info->src_addr_valid )) {
-		pr_info("New flow info->dest_addr_valid %u %u %u %u ",
+		pr_info("New flow info->dest_addr_valid %u %u %u %u\n",
                 node->info.dest_ip_addr.v6_daddr.in6_u.u6_addr32[3],
                 node->info.dest_ip_addr.v6_daddr.in6_u.u6_addr32[2],
                 node->info.dest_ip_addr.v6_daddr.in6_u.u6_addr32[1],
                 node->info.dest_ip_addr.v6_daddr.in6_u.u6_addr32[0]);
-		pr_info("New flow info->src_addr_valid  %u %u %u %u",
+		pr_info("New flow info->src_addr_valid  %u %u %u %u\n",
                 node->info.src_ip_addr.v6_saddr.in6_u.u6_addr32[3],
                 node->info.src_ip_addr.v6_saddr.in6_u.u6_addr32[2],
                 node->info.src_ip_addr.v6_saddr.in6_u.u6_addr32[1],
@@ -635,8 +637,7 @@ int rmnet_shs_ll_handler(struct sk_buff *skb, struct rmnet_shs_clnt_s *clnt_cfg)
 		rmnet_shs_ll_stamp(skb, node_p);
 		if (!node_p->ll_flag &&
 		    rmnet_shs_is_lpwr_cpu(raw_smp_processor_id()))  {
-			if (GET_QLEN(raw_smp_processor_id()) <  MAX_LL_CORE_BACKLOG &&
-			    rmnet_shs_cpu_psb_above_thresh(raw_smp_processor_id(), 4000)) {
+			if (GET_QLEN(raw_smp_processor_id()) <  MAX_LL_CORE_BACKLOG ) {
 				skb->hash = 0;
 				skb->sw_hash = 1;
 			} else if (!node_p->ll_flag) {
@@ -646,8 +647,7 @@ int rmnet_shs_ll_handler(struct sk_buff *skb, struct rmnet_shs_clnt_s *clnt_cfg)
 			}
 		} else if (node_p->ll_flag != RMNET_SHS_LL_SAME_CORE_GOLD){
 			if (!rmnet_shs_is_lpwr_cpu(raw_smp_processor_id()))  {
-				if (GET_QLEN(raw_smp_processor_id()) < MAX_LL_CORE_BACKLOG &&
-				    rmnet_shs_cpu_psb_above_thresh(raw_smp_processor_id(), 12000)) {
+				if (GET_QLEN(raw_smp_processor_id()) < MAX_LL_CORE_BACKLOG) {
 				skb->hash = 0;
 				skb->sw_hash = 1;
 

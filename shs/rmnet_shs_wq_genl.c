@@ -12,6 +12,7 @@
 #include <net/sock.h>
 #include <linux/skbuff.h>
 #include <linux/cpumask.h>
+#include <uapi/linux/rmnet_shs.h>
 
 MODULE_LICENSE("GPL v2");
 
@@ -29,6 +30,9 @@ int rmnet_shs_userspace_connected;
 
 #define RMNET_SHS_GENL_SEC_TO_NSEC(x)   ((x) * 1000000000)
 
+
+#define RMNET_SHS_GENL_ATTR_MAX (RMNET_SHS_GENL_ATTR_BATCH_MOVE)
+
 /* Static Functions and Definitions */
 static struct nla_policy rmnet_shs_genl_attr_policy[RMNET_SHS_GENL_ATTR_MAX + 1] = {
 	[RMNET_SHS_GENL_ATTR_INT]  = { .type = NLA_S32 },
@@ -38,6 +42,9 @@ static struct nla_policy rmnet_shs_genl_attr_policy[RMNET_SHS_GENL_ATTR_MAX + 1]
 	[RMNET_SHS_GENL_ATTR_QUICKACK]  = NLA_POLICY_EXACT_LEN(sizeof(struct rmnet_shs_wq_quickack_info)),
 	[RMNET_SHS_GENL_ATTR_STR]  = { .type = NLA_NUL_STRING, .len = RMNET_SHS_GENL_MAX_STR_LEN},
 	[RMNET_SHS_GENL_ATTR_BOOTUP] = NLA_POLICY_EXACT_LEN(sizeof(struct rmnet_shs_bootup_info)),
+	[RMNET_SHS_GENL_ATTR_CLEAN] = NLA_POLICY_EXACT_LEN(sizeof(struct rmnet_shs_wq_clean_info)),
+	[RMNET_SHS_GENL_ATTR_BATCH_MOVE] = NLA_POLICY_EXACT_LEN(sizeof(struct rmnet_shs_wq_batch_sugg_info)),
+
 };
 
 #define RMNET_SHS_GENL_OP(_cmd, _func)			\
@@ -63,7 +70,10 @@ static const struct genl_ops rmnet_shs_genl_ops[] = {
 			  rmnet_shs_genl_set_quickack_thresh),
 	RMNET_SHS_GENL_OP(RMNET_SHS_GENL_CMD_BOOTUP,
 			  rmnet_shs_genl_set_bootup_config),
-
+	RMNET_SHS_GENL_OP(RMNET_SHS_GENL_CMD_CLEANUP,
+			  rmnet_shs_genl_cleanup),
+	RMNET_SHS_GENL_OP(RMNET_SHS_GENL_CMD_BATCH_MOVE,
+			  rmnet_shs_genl_batch_move_flow),
 };
 
 /* Generic Netlink Message Channel policy and ops */
@@ -225,6 +235,54 @@ out:
 	return -1;
 }
 
+int rmnet_shs_genl_msg_direct_send_to_userspace(struct rmnet_shs_msg_resp *msg_ptr)
+{
+	struct sk_buff *skb;
+	void *msg_head;
+	int rc;
+
+	if (msg_last_net == NULL) {
+		rm_err("%s", "SHS_GNL: FAILED to send msg_last_net is NULL\n");
+		return -1;
+	}
+
+	skb = genlmsg_new(NLMSG_GOODSIZE, GFP_ATOMIC);
+	if (skb == NULL)
+		goto out;
+
+	msg_head = genlmsg_put(skb, 0, rmnet_shs_genl_msg_seqnum++,
+			       &rmnet_shs_genl_msg_family,
+			       0, RMNET_SHS_GENL_MSG_WAIT_CMD);
+	if (msg_head == NULL) {
+		rc = -ENOMEM;
+		rm_err("SHS_GNL: FAILED to msg_head %d\n", rc);
+		kfree(skb);
+		goto out;
+	}
+	rc = nla_put(skb, RMNET_SHS_GENL_MSG_ATTR_RESP,
+		     sizeof(struct rmnet_shs_msg_resp),
+		     msg_ptr);
+	if (rc != 0) {
+		rm_err("SHS_GNL: FAILED nla_put %d\n", rc);
+		kfree(skb);
+		goto out;
+	}
+
+	genlmsg_end(skb, msg_head);
+
+	rc = genlmsg_unicast(msg_last_net, skb, msg_last_snd_portid);
+	if (rc != 0)
+		goto out;
+
+	rm_err("SHS_MSG_GNL: Successfully sent msg %d\n",
+	       rmnet_shs_genl_msg_seqnum);
+	return 0;
+
+out:
+	rm_err("%s", "SHS_GNL: FAILED to send to msg channel\n");
+	return -1;
+}
+
 /* Currently unused - handles message from userspace to initialize the shared memory,
  * memory is inited by kernel wq automatically
  */
@@ -237,6 +295,46 @@ int rmnet_shs_genl_dma_init(struct sk_buff *skb_2, struct genl_info *info)
 	if (info == NULL) {
 		rm_err("%s", "SHS_GNL: an error occured - info is null");
 		return -1;
+	}
+
+	return 0;
+}
+
+int rmnet_shs_genl_cleanup(struct sk_buff *skb_2, struct genl_info *info)
+{
+	struct nlattr *na;
+	struct rmnet_shs_wq_clean_info flow_info;
+
+	rm_err("%s", "SHS_GNL: rmnet_shs_genl_cleanup");
+
+	if (info == NULL) {
+		rm_err("%s", "SHS_GNL: an error occured - info is null");
+		return -1;
+	}
+
+	na = info->attrs[RMNET_SHS_GENL_ATTR_CLEAN];
+	if (na) {
+        /* Dyanmically allocating filter/flow info which must be freed */
+		if (nla_memcpy(&flow_info, na, sizeof(flow_info)) > 0) {
+			rm_err("SHS_GNL: cleanup hash %x ",
+			       flow_info.hash_to_clean);
+
+			rmnet_shs_wq_cleanup_hash_tbl(1, flow_info.hash_to_clean);
+			rmnet_shs_genl_send_int_to_userspace(info,
+						RMNET_SHS_CLEAN_PASS_INT);
+		} else {
+			rm_err("SHS_GNL: nla_memcpy failed %d\n",
+			       RMNET_SHS_GENL_ATTR_FLOW);
+			rmnet_shs_genl_send_int_to_userspace(info,
+					RMNET_SHS_CLEAN_FAIL_RESP_INT);
+			return 0;
+		}
+	} else {
+		rm_err("SHS_GNL: no info->attrs %d\n",
+		       RMNET_SHS_GENL_ATTR_CLEAN);
+		rmnet_shs_genl_send_int_to_userspace(info,
+				RMNET_SHS_CLEAN_FAIL_RESP_INT);
+		return 0;
 	}
 
 	return 0;
@@ -295,6 +393,8 @@ int rmnet_shs_genl_set_bootup_config(struct sk_buff *skb_2, struct genl_info *in
 	struct nlattr *na;
 	struct rmnet_shs_bootup_info bootup_info;
 	int i;
+	int maj_ver;
+	int min_ver;
 
 	rm_err("%s %s", "SHS_GNL: ", __func__);
 
@@ -312,6 +412,9 @@ int rmnet_shs_genl_set_bootup_config(struct sk_buff *skb_2, struct genl_info *in
 			rmnet_shs_cfg.perf_mask = ~rmnet_shs_cfg.non_perf_mask;
 			rmnet_shs_cfg.feature_mask = bootup_info.feature_mask;
 			rmnet_shs_cfg.cpu_freq_boost_val = bootup_info.cpu_freq_boost_val;
+			rmnet_shs_cfg.usr_version = bootup_info.usr_version;
+			maj_ver = bootup_info.usr_version >> 16;
+			min_ver = bootup_info.usr_version & 0xFFFF;
 
 			/* Requires shsusrd to enable */
 			if (rmnet_shs_cfg.feature_mask & INST_RX_SWTCH_FEAT) {
@@ -319,10 +422,10 @@ int rmnet_shs_genl_set_bootup_config(struct sk_buff *skb_2, struct genl_info *in
 			}
 
 			rm_err("SHS_GNL: bootup req "
-			       "feature_mask = 0x%x non_perfmaxk = 0x%x, perf_mask 0x%x",
+			       "feature_mask = 0x%x non_perfmaxk = 0x%x, perf_mask 0x%x version %d.%d",
 			       bootup_info.feature_mask,
 			       rmnet_shs_cfg.non_perf_mask,
-				   rmnet_shs_cfg.perf_mask);
+				   rmnet_shs_cfg.perf_mask, maj_ver, min_ver);
 			for(i = 0; i < MAX_CPUS; i++)
 			{
 				rmnet_shs_cpu_rx_min_pps_thresh[i] = bootup_info.rx_min_pps_thresh[i];
@@ -351,6 +454,7 @@ int rmnet_shs_genl_set_bootup_config(struct sk_buff *skb_2, struct genl_info *in
 
 	return 0;
 }
+
 int rmnet_shs_genl_set_flow_segmentation(struct sk_buff *skb_2, struct genl_info *info)
 {
 	struct nlattr *na;
@@ -456,6 +560,57 @@ int rmnet_shs_genl_set_quickack_thresh(struct sk_buff *skb_2, struct genl_info *
 		return 0;
 	}
 
+	return 0;
+}
+
+int rmnet_shs_genl_batch_move_flow(struct sk_buff *skb_2, struct genl_info *info)
+{
+	struct nlattr *na;
+	struct rmnet_shs_wq_batch_sugg_info sugg_info;
+	int rc = 0, i = 0, fails = 0;
+
+	rm_err("%s", "SHS_GNL: rmnet_shs_genl_batch_move_flow");
+
+	if (info == NULL) {
+		rm_err("%s", "SHS_GNL: an error occured - info is null");
+		return -1;
+	}
+
+	na = info->attrs[RMNET_SHS_GENL_ATTR_BATCH_MOVE];
+	if (na && nla_memcpy(&sugg_info, na, sizeof(sugg_info)) > 0) {
+		if (sugg_info.num_flows >= MAX_BATCH_FLOWS)
+			goto fail;
+
+		for (i = 0; i < sugg_info.num_flows; i++) {
+			rm_err("SHS_GNL: cur_cpu =%u dest_cpu = %u "
+				"hash_to_move = 0x%x sugg_type = %u",
+				sugg_info.move_info[i].cur_cpu,
+				sugg_info.move_info[i].dest_cpu,
+				sugg_info.move_info[i].hash_to_move,
+				sugg_info.move_info[i].sugg_type);
+
+			if (sugg_info.move_info[i].dest_cpu >= MAX_CPUS || sugg_info.move_info[i].cur_cpu >= MAX_CPUS) {
+				rmnet_shs_mid_err[RMNET_SHS_MALFORM_MOVE]++;
+				fails++;
+				continue;
+			}
+
+			rc = rmnet_shs_wq_try_to_move_flow(sugg_info.move_info[i].cur_cpu,
+							sugg_info.move_info[i].dest_cpu,
+							sugg_info.move_info[i].hash_to_move,
+							sugg_info.move_info[i].sugg_type);
+			if (rc != 1) {
+				fails++;
+			}
+		}
+		if (!fails) {
+			rmnet_shs_genl_send_int_to_userspace(info, RMNET_SHS_BATCH_PASS_INT);
+			return 0;
+		}
+	}
+
+fail:
+	rmnet_shs_genl_send_int_to_userspace(info, RMNET_SHS_BATCH_FAIL_INT);
 	return 0;
 }
 
@@ -631,7 +786,8 @@ int rmnet_shs_genl_mem_sync(struct sk_buff *skb_2, struct genl_info *info)
 	return 0;
 }
 
-
+/* Create paylod messages from dlkm to userspace for specific message type
+ */
 void rmnet_shs_create_ping_boost_msg_resp(uint32_t perf_duration,
 					  struct rmnet_shs_msg_resp *msg_resp)
 {
@@ -659,7 +815,6 @@ void rmnet_shs_create_ping_boost_msg_resp(uint32_t perf_duration,
 	msg_resp->valid = 1;
 	msg_resp->list_len = 1;
 }
-
 
 void rmnet_shs_create_pause_msg_resp(uint8_t seq,
 					  struct rmnet_shs_msg_resp *msg_resp)
@@ -709,54 +864,6 @@ void rmnet_shs_create_phy_msg_resp(struct rmnet_shs_msg_resp *msg_resp,
 
 	msg_resp->valid = 1;
 	msg_resp->list_len = 1;
-}
-
-int rmnet_shs_genl_msg_direct_send_to_userspace(struct rmnet_shs_msg_resp *msg_ptr)
-{
-	struct sk_buff *skb;
-	void *msg_head;
-	int rc;
-
-	if (msg_last_net == NULL) {
-		rm_err("%s", "SHS_GNL: FAILED to send msg_last_net is NULL\n");
-		return -1;
-	}
-
-	skb = genlmsg_new(NLMSG_GOODSIZE, GFP_ATOMIC);
-	if (skb == NULL)
-		goto out;
-
-	msg_head = genlmsg_put(skb, 0, rmnet_shs_genl_msg_seqnum++,
-			       &rmnet_shs_genl_msg_family,
-			       0, RMNET_SHS_GENL_MSG_WAIT_CMD);
-	if (msg_head == NULL) {
-		rc = -ENOMEM;
-		rm_err("SHS_GNL: FAILED to msg_head %d\n", rc);
-		kfree(skb);
-		goto out;
-	}
-	rc = nla_put(skb, RMNET_SHS_GENL_MSG_ATTR_RESP,
-		     sizeof(struct rmnet_shs_msg_resp),
-		     msg_ptr);
-	if (rc != 0) {
-		rm_err("SHS_GNL: FAILED nla_put %d\n", rc);
-		kfree(skb);
-		goto out;
-	}
-
-	genlmsg_end(skb, msg_head);
-
-	rc = genlmsg_unicast(msg_last_net, skb, msg_last_snd_portid);
-	if (rc != 0)
-		goto out;
-
-	rm_err("SHS_MSG_GNL: Successfully sent msg %d\n",
-	       rmnet_shs_genl_msg_seqnum);
-	return 0;
-
-out:
-	rm_err("%s", "SHS_GNL: FAILED to send to msg channel\n");
-	return -1;
 }
 
 /* Handler for message channel to shsusrd */
