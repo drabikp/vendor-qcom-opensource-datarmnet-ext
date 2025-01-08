@@ -24,11 +24,6 @@ struct cpu_freq {
 	unsigned int freq_floor;
 	unsigned int freq_ceil;
 };
-
-unsigned int rmnet_shs_freq_enable __read_mostly = 1;
-module_param(rmnet_shs_freq_enable, uint, 0644);
-MODULE_PARM_DESC(rmnet_shs_freq_enable, "Enable/disable freq boost feature");
-
 /* Shared workqueue between existing boosting and pb marker boosting*/
 struct workqueue_struct *shs_boost_wq;
 

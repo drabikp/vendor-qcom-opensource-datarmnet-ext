@@ -1,7 +1,19 @@
 load(":define_shs.bzl", "define_shs")
+load("//build/kernel/kleaf:kernel.bzl", "ddk_headers", "ddk_module")
 
 define_shs("sun", "consolidate")
 define_shs("sun", "perf")
-
 define_shs("canoe", "consolidate")
 define_shs("canoe", "perf")
+ddk_headers(
+    name = "include_headers",
+    hdrs = glob([
+        "include/linux/*.h",
+        "include/uapi/linux/*.h",
+    ]),
+    includes = [
+        "include",
+        "include/linux",
+        "include/uapi",
+    ],
+)
