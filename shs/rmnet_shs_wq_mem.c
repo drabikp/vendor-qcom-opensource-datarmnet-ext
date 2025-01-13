@@ -16,28 +16,12 @@ MODULE_LICENSE("GPL v2");
 struct proc_dir_entry *shs_proc_dir;
 
 /* Fixed arrays to copy to userspace over netlink */
-struct rmnet_shs_wq_cpu_cap_usr_s rmnet_shs_wq_cap_list_usr[MAX_CPUS];
-struct rmnet_shs_wq_gflows_usr_s rmnet_shs_wq_gflows_usr[RMNET_SHS_MAX_USRFLOWS];
-struct rmnet_shs_wq_ssflows_usr_s rmnet_shs_wq_ssflows_usr[RMNET_SHS_MAX_USRFLOWS];
-struct rmnet_shs_wq_fflows_usr_s rmnet_shs_wq_fflows_usr[RMNET_SHS_NUM_TOP_FFLOWS];
-struct rmnet_shs_wq_ll_flows_usr_s rmnet_shs_wq_ll_flows_usr[RMNET_SHS_NUM_TOP_FFLOWS];
-struct rmnet_shs_wq_netdev_usr_s rmnet_shs_wq_netdev_usr[RMNET_SHS_MAX_NETDEVS];
+struct rmnet_shs_shared_mem_block_s rmnet_shs_wq_global_struct;
+struct rmnet_shs_mmap_info *global_shared;
+#define global_flow rmnet_shs_wq_global_struct.flow_entries
+#define global_blk_hdr rmnet_shs_wq_global_struct.blk_hdr
 
-struct list_head gflows   = LIST_HEAD_INIT(gflows);   /* gold flows */
-struct list_head ssflows  = LIST_HEAD_INIT(ssflows);  /* slow start flows */
-struct list_head cpu_caps = LIST_HEAD_INIT(cpu_caps); /* capacities */
-struct list_head fflows   = LIST_HEAD_INIT(fflows);   /* filter flows */
-struct list_head ll_flows   = LIST_HEAD_INIT(ll_flows);   /* LL flows */
-
-struct rmnet_shs_mmap_info *cap_shared;
-struct rmnet_shs_mmap_info *gflow_shared;
-struct rmnet_shs_mmap_info *ssflow_shared;
-struct rmnet_shs_mmap_info *fflow_shared;
-struct rmnet_shs_mmap_info *llflow_shared;
-struct rmnet_shs_mmap_info *netdev_shared;
-
-/* Static Functions and Definitions */
-static void rmnet_shs_vm_open(struct vm_area_struct *vma)
+static int rmnet_shs_mmap_global(struct file *filp, struct vm_area_struct *vma)
 {
 	return;
 }
@@ -735,32 +719,15 @@ void rmnet_shs_wq_ssflow_list_add(struct rmnet_shs_wq_hstat_s *hnode,
 		rmnet_shs_crit_err[RMNET_SHS_WQ_INVALID_PTR_ERR]++;
 		return;
 	}
-
-	ssflow_node = kzalloc(sizeof(*ssflow_node), GFP_ATOMIC);
-	if (ssflow_node != NULL) {
-		ssflow_node->avg_pps = hnode->avg_pps;
-		ssflow_node->cpu_num = hnode->current_cpu;
-		ssflow_node->hash = hnode->hash;
-		ssflow_node->bif = hnode->bif;
-		ssflow_node->ack_thresh = hnode->ack_thresh;
-		ssflow_node->rx_pps = hnode->rx_pps;
-		ssflow_node->rx_bps = hnode->rx_bps;
-
-		list_add(&ssflow_node->ssflow_list, ss_flows);
-	} else {
-		rmnet_shs_crit_err[RMNET_SHS_WQ_NODE_MALLOC_ERR]++;
-	}
-}
-
-/* Clean up slow start flow list */
-void rmnet_shs_wq_cleanup_ss_flow_list(struct list_head *ss_flows)
-{
-	struct rmnet_shs_wq_ss_flow_s *ssflow_node;
-	struct list_head *ptr, *next;
-
-	if (!ss_flows) {
-		rmnet_shs_crit_err[RMNET_SHS_WQ_INVALID_PTR_ERR]++;
-		return;
+	memset(&rmnet_shs_wq_global_struct, -1, sizeof(rmnet_shs_wq_global_struct)),
+	global_blk_hdr.version = SHS_SHARED_MEM_BLOCK_STRUCT_VERSION;
+	global_blk_hdr.isolation_mask = rmnet_shs_halt_mask;
+	global_blk_hdr.reserve_mask = rmnet_shs_reserve_mask;
+	global_blk_hdr.titanium_mask = 0x0;
+	global_blk_hdr.online_mask = rmnet_shs_get_online_mask();
+	global_blk_hdr.cur_time = ktime_get_clocktai_ns();
+	if (rmnet_shs_cfg.port) {
+		global_blk_hdr.pb_marker_seq = rmnet_shs_cfg.port->stats.pb_marker_seq;
 	}
 
 	list_for_each_safe(ptr, next, ss_flows) {

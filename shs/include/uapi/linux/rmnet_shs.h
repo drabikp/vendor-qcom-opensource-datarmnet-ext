@@ -137,6 +137,16 @@ struct __attribute__((__packed__ ))  rmnet_shs_shared_mem_block_s {
 #define RMNET_SHS_GENL_ATTR_CLEAN 8
 #define RMNET_SHS_GENL_ATTR_BATCH_MOVE 9
 
+/* Update RMNET_SHS_WQ_SUGG_MAX with the maximum value if a new entry is added */
+#define RMNET_SHS_WQ_SUGG_NONE 0
+#define RMNET_SHS_WQ_SUGG_SILVER_TO_GOLD 1
+#define RMNET_SHS_WQ_SUGG_GOLD_TO_SILVER 2
+#define RMNET_SHS_WQ_SUGG_GOLD_BALANCE 3
+#define RMNET_SHS_WQ_SUGG_RMNET_TO_GOLD 4
+#define RMNET_SHS_WQ_SUGG_RMNET_TO_SILVER 5
+#define RMNET_SHS_WQ_SUGG_LL_FLOW_CORE 6
+#define RMNET_SHS_WQ_SUGG_LL_PHY_CORE 7
+
 struct rmnet_shs_bootup_info {
 	__u32 feature_mask;
 	__u8 non_perf_mask;
