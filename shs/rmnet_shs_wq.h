@@ -30,45 +30,7 @@
 #define RMNET_SHS_MIN_HSTAT_NODES_REQD 16
 #define RMNET_SHS_WQ_INTERVAL_MS  100
 
-extern struct list_head rmnet_shs_wq_ep_tbl;
-
-/* stores wq and end point details */
-
-struct rmnet_shs_wq_ep_s {
-	u64 tcp_rx_bps;
-	u64 udp_rx_bps;
-	struct list_head ep_list_id;
-	struct net_device *ep;
-	int  new_lo_core[MAX_CPUS];
-	int  new_hi_core[MAX_CPUS];
-	u16 default_core_msk;
-	u16 pri_core_msk;
-	u16 rps_config_msk;
-	u8 is_ep_active;
-	int  new_lo_idx;
-	int  new_hi_idx;
-	int  new_lo_max;
-	int  new_hi_max;
-};
-
-struct rmnet_shs_wq_ep_list_s {
-	struct list_head ep_id;
-	struct rmnet_shs_wq_ep_s ep;
-};
-
-/* Types of suggestions made by shs wq */
-enum rmnet_shs_wq_suggestion_type {
-	RMNET_SHS_WQ_SUGG_NONE,
-	RMNET_SHS_WQ_SUGG_SILVER_TO_GOLD,
-	RMNET_SHS_WQ_SUGG_GOLD_TO_SILVER,
-	RMNET_SHS_WQ_SUGG_GOLD_BALANCE,
-	RMNET_SHS_WQ_SUGG_RMNET_TO_GOLD,
-	RMNET_SHS_WQ_SUGG_RMNET_TO_SILVER,
-	RMNET_SHS_WQ_SUGG_LL_FLOW_CORE,
-	RMNET_SHS_WQ_SUGG_LL_PHY_CORE,
-	RMNET_SHS_WQ_SUGG_MAX,
-};
-
+#define RMNET_SHS_WQ_SUGG_MAX RMNET_SHS_WQ_SUGG_LL_PHY_CORE
 
 
 struct rmnet_shs_wq_hstat_s {
