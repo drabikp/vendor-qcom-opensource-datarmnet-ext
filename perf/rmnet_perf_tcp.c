@@ -12,12 +12,14 @@
 #include <linux/hashtable.h>
 #include <linux/log2.h>
 #include <linux/workqueue.h>
+#include <linux/xarray.h>
 #include <net/ip.h>
 #include <net/inet_hashtables.h>
 #include <net/ipv6.h>
 #include <net/inet6_hashtables.h>
 #include <net/tcp.h>
 #include <net/sock.h>
+#include <net/inet_ecn.h>
 #include "rmnet_private.h"
 
 #include "rmnet_perf_tcp.h"
@@ -81,6 +83,14 @@ struct rmnet_perf_quickack_work_struct {
 	bool force_clean;
 };
 
+struct rmnet_perf_ecn_node {
+	struct rcu_head rcu;
+	u32 prob;
+	u32 count;
+	u32 drops;
+	bool should_drop;
+};
+
 /* For quickack hash protection */
 static DEFINE_SPINLOCK(rmnet_perf_quickack_lock);
 static DEFINE_HASHTABLE(rmnet_perf_quickack_hash,
@@ -99,6 +109,9 @@ module_param_named(rmnet_perf_tcp_knob0, rmnet_perf_quickack_hash_size_param,
 static u64 rmnet_perf_quickack_stats[RMNET_PERF_QUICKACK_STAT_MAX];
 module_param_array_named(rmnet_perf_tcp_stat, rmnet_perf_quickack_stats,
 			 ullong, NULL, 0444);
+
+/* Holds all ECN nodes. Synchronized using internal lock */
+static DEFINE_XARRAY(rmnet_perf_ecn_map);
 
 static void rmnet_perf_quickack_stats_update(u32 stat)
 {
@@ -485,6 +498,14 @@ rmnet_perf_ingress_handle_tcp_common(struct sk_buff *skb,
 	return true;
 }
 
+static void rmnet_perf_ecn_node_free(struct rcu_head *head)
+{
+	struct rmnet_perf_ecn_node *node;
+
+	node = container_of(head, struct rmnet_perf_ecn_node, rcu);
+	kfree(node);
+}
+
 /* Process a TCP packet on the RMNET core */
 void rmnet_perf_ingress_handle_tcp(struct sk_buff *skb)
 {
@@ -546,6 +567,56 @@ void rmnet_perf_ingress_rx_handler_tcp(struct sk_buff *skb)
 	}
 
 	rcu_read_unlock();
+}
+
+/* Check for ECN handling on this packet, and possibly drop it */
+int rmnet_perf_ingress_tcp_ecn(struct sk_buff *skb, int ip_len)
+{
+	struct rmnet_perf_ecn_node *node;
+	struct tcphdr *th, __th;
+
+	rcu_read_lock();
+	node = xa_load(&rmnet_perf_ecn_map, skb->hash);
+	if (!node)
+		goto skip;
+
+	node->count++;
+	th = skb_header_pointer(skb, ip_len, sizeof(*th), &__th);
+	if (!th)
+		/* Well, we tried... */
+		goto skip;
+
+	/* Avoid touching any fancy control packets here */
+	if (tcp_flag_word(th) & (TCP_FLAG_CWR | TCP_FLAG_SYN | TCP_FLAG_RST |
+				 TCP_FLAG_FIN))
+		goto skip;
+
+	if (node->count >= node->prob) {
+		node->count = 0;
+		node->drops++;
+		if (node->should_drop) {
+			kfree_skb(skb);
+			rcu_read_unlock();
+			return 1;
+		}
+
+		/* Try and set the ECN bits in the ip header. The stack expects
+		 * skb_network_header to work, so make sure it does.
+		 */
+		if (!pskb_may_pull(skb, ip_len)) {
+			/* Well, dropping it is... */
+			kfree_skb(skb);
+			rcu_read_unlock();
+			return 1;
+		}
+
+		/* You get to die another day */
+		INET_ECN_set_ce(skb);
+	}
+
+skip:
+	rcu_read_unlock();
+	return 0;
 }
 
 void rmnet_perf_egress_handle_tcp(struct sk_buff *skb)
@@ -624,6 +695,68 @@ void rmnet_perf_tcp_update_quickack_thresh(u32 hash_key, u32 byte_thresh)
 	rcu_read_unlock();
 }
 
+int rmnet_perf_tcp_update_ecn_prob(u32 hash_key, u32 prob, bool should_drop)
+{
+	struct rmnet_perf_ecn_node *node;
+	int err;
+
+	xa_lock(&rmnet_perf_ecn_map);
+	node = __xa_store(&rmnet_perf_ecn_map, hash_key, NULL, GFP_KERNEL);
+	if (xa_is_err(node)) {
+		xa_unlock(&rmnet_perf_ecn_map);
+		return xa_err(node);
+	}
+
+	if (!node) {
+		/* Adding the node for the first time */
+		node = kzalloc(sizeof(*node), GFP_KERNEL);
+		if (!node) {
+			xa_unlock(&rmnet_perf_ecn_map);
+			return -ENOMEM;
+		}
+	}
+
+	if (!prob) {
+		/* 0 drop probability means we no longer need to store
+		 * this node and track it.
+		 */
+		call_rcu(&node->rcu, rmnet_perf_ecn_node_free);
+		xa_unlock(&rmnet_perf_ecn_map);
+		return 0;
+	}
+
+	node->prob = prob;
+	node->should_drop = should_drop;
+	err = xa_err(__xa_store(&rmnet_perf_ecn_map, hash_key, node,
+				GFP_KERNEL));
+	xa_unlock(&rmnet_perf_ecn_map);
+	if (err) {
+		kfree(node);
+		return err;
+	}
+
+	return 0;
+}
+
+int rmnet_perf_tcp_get_ecn_drops(u32 hash_key, u32 *drops)
+{
+	struct rmnet_perf_ecn_node *node;
+
+	if (!drops)
+		return -EINVAL;
+
+	rcu_read_lock();
+	node = xa_load(&rmnet_perf_ecn_map, hash_key);
+	if (node)
+		*drops = node->drops;
+
+	rcu_read_unlock();
+	if (!node)
+		return -ESRCH;
+
+	return 0;
+}
+
 int rmnet_perf_tcp_init(void)
 {
 	INIT_DELAYED_WORK(&rmnet_perf_quickack_work.ws,
@@ -633,6 +766,9 @@ int rmnet_perf_tcp_init(void)
 
 void rmnet_perf_tcp_exit(void)
 {
+	struct rmnet_perf_ecn_node *node;
+	unsigned long idx;
+
 	/* Force the current work struct to finish deleting anything old
 	 * enough...
 	 */
@@ -643,4 +779,11 @@ void rmnet_perf_tcp_exit(void)
 
 	/* ...and force remove all the rest of the nodes */
 	cancel_delayed_work_sync(&rmnet_perf_quickack_work.ws);
+
+	xa_lock(&rmnet_perf_ecn_map);
+	xa_for_each(&rmnet_perf_ecn_map, idx, node)
+		call_rcu(&node->rcu, rmnet_perf_ecn_node_free);
+
+	xa_unlock(&rmnet_perf_ecn_map);
+	xa_destroy(&rmnet_perf_ecn_map);
 }

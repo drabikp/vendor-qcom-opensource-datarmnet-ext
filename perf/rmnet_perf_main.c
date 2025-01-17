@@ -53,7 +53,7 @@ enum {
 	__RMNET_PERF_MULTICAST_GROUP_MAX,
 };
 
-#define RMNET_PERF_ATTR_MAX RMNET_PERF_ATTR_MAP_CMD_IND
+#define RMNET_PERF_ATTR_MAX RMNET_PERF_ATTR_ECN_DROPS
 
 static struct nla_policy rmnet_perf_nl_policy[RMNET_PERF_ATTR_MAX + 1] = {
 	[RMNET_PERF_ATTR_STATS_REQ] = NLA_POLICY_EXACT_LEN(sizeof(struct rmnet_perf_stats_req)),
@@ -61,6 +61,10 @@ static struct nla_policy rmnet_perf_nl_policy[RMNET_PERF_ATTR_MAX + 1] = {
 	[RMNET_PERF_ATTR_MAP_CMD_REQ] = NLA_POLICY_EXACT_LEN(sizeof(struct rmnet_perf_map_cmd_req)),
 	[RMNET_PERF_ATTR_MAP_CMD_RESP] = NLA_POLICY_EXACT_LEN(sizeof(struct rmnet_perf_map_cmd_resp)),
 	[RMNET_PERF_ATTR_MAP_CMD_IND] = NLA_POLICY_EXACT_LEN(sizeof(struct rmnet_perf_map_cmd_ind)),
+	[RMNET_PERF_ATTR_ECN_HASH] = { .type = NLA_U32, },
+	[RMNET_PERF_ATTR_ECN_PROB] = { .type = NLA_U32, },
+	[RMNET_PERF_ATTR_ECN_TYPE] = { .type = NLA_U8, },
+	[RMNET_PERF_ATTR_ECN_DROPS] = { .type = NLA_U32, },
 };
 
 static const struct genl_multicast_group rmnet_perf_nl_mcgrps[] = {
@@ -188,6 +192,8 @@ int rmnet_perf_ingress_handle(struct sk_buff *skb)
 
 void rmnet_perf_ingress_rx_handler(struct sk_buff *skb)
 {
+	u8 proto = 0;
+
 	if (skb->protocol == htons(ETH_P_IP)) {
 		struct iphdr *iph, __iph;
 
@@ -195,15 +201,11 @@ void rmnet_perf_ingress_rx_handler(struct sk_buff *skb)
 		if (!iph || ip_is_fragment(iph))
 			return;
 
-		if (iph->protocol == IPPROTO_TCP) {
-			if (enable_tcp)
-				rmnet_perf_ingress_rx_handler_tcp(skb);
-		}
+		proto = iph->protocol;
 	} else if (skb->protocol == htons(ETH_P_IPV6)) {
 		struct ipv6hdr *ip6h, __ip6h;
 		int ip_len;
 		__be16 frag_off;
-		u8 proto;
 
 		ip6h = skb_header_pointer(skb, 0, sizeof(*ip6h), &__ip6h);
 		if (!ip6h)
@@ -214,12 +216,50 @@ void rmnet_perf_ingress_rx_handler(struct sk_buff *skb)
 					  &frag_off);
 		if (ip_len < 0 || frag_off)
 			return;
-
-		if (proto == IPPROTO_TCP) {
-			if (enable_tcp)
-				rmnet_perf_ingress_rx_handler_tcp(skb);
-		}
 	}
+
+	if (proto == IPPROTO_TCP) {
+		if (enable_tcp)
+			rmnet_perf_ingress_rx_handler_tcp(skb);
+	}
+}
+
+int rmnet_perf_ingress_ecn_handle(struct sk_buff *skb)
+{
+	u8 proto = 0;
+	int ip_len;
+
+	if (skb->protocol == htons(ETH_P_IP)) {
+		struct iphdr *iph, __iph;
+
+		iph = skb_header_pointer(skb, 0, sizeof(*iph), &__iph);
+		if (!iph || ip_is_fragment(iph))
+			goto pass;
+
+		ip_len = iph->ihl * 4;
+		proto = iph->protocol;
+	} else if (skb->protocol == htons(ETH_P_IPV6)) {
+		struct ipv6hdr *ip6h, __ip6h;
+		__be16 frag_off;
+
+		ip6h = skb_header_pointer(skb, 0, sizeof(*ip6h), &__ip6h);
+		if (!ip6h)
+			goto pass;
+
+		proto = ip6h->nexthdr;
+		ip_len = ipv6_skip_exthdr(skb, sizeof(*ip6h), &proto,
+					  &frag_off);
+		if (ip_len < 0 || frag_off)
+			goto pass;
+	}
+
+	if (proto == IPPROTO_TCP) {
+		if (rmnet_perf_ingress_tcp_ecn(skb, ip_len))
+			return 1;
+	}
+
+pass:
+	return 0;
 }
 
 static void rmnet_perf_egress_handle_quic(struct sk_buff *skb, int ip_len)
@@ -457,6 +497,10 @@ rmnet_perf_module_hooks[] = {
 		.hooknum = RMNET_MODULE_HOOK_PERF_NON_COAL_STAT,
 		.func = rmnet_perf_non_coal_stat,
 	},
+	{
+		.hooknum = RMNET_MODULE_HOOK_PERF_ECN_INGRESS,
+		.func = rmnet_perf_ingress_ecn_handle,
+	},
 };
 
 void rmnet_perf_set_hooks(void)
@@ -471,31 +515,7 @@ void rmnet_perf_unset_hooks(void)
 				     ARRAY_SIZE(rmnet_perf_module_hooks));
 }
 
-int rmnet_perf_nl_cmd_get_stats(struct sk_buff *skb, struct genl_info *info);
-int rmnet_perf_nl_cmd_map_cmd_req(struct sk_buff *skb, struct genl_info *info);
-
-static const struct genl_ops rmnet_perf_nl_ops[] = {
-	{
-		.cmd = RMNET_PERF_CMD_GET_STATS,
-		.doit = rmnet_perf_nl_cmd_get_stats,
-	},
-	{
-		.cmd = RMNET_PERF_CMD_MAP_CMD,
-		.doit = rmnet_perf_nl_cmd_map_cmd_req,
-	},
-};
-
-struct genl_family rmnet_perf_nl_family __ro_after_init = {
-	.hdrsize = 0,
-	.name = RMNET_PERF_GENL_FAMILY_NAME,
-	.version = RMNET_PERF_GENL_VERSION,
-	.maxattr = RMNET_PERF_ATTR_MAX,
-	.policy = rmnet_perf_nl_policy,
-	.ops = rmnet_perf_nl_ops,
-	.n_ops = ARRAY_SIZE(rmnet_perf_nl_ops),
-	.mcgrps = rmnet_perf_nl_mcgrps,
-	.n_mcgrps = ARRAY_SIZE(rmnet_perf_nl_mcgrps),
-};
+static struct genl_family rmnet_perf_nl_family;
 
 int rmnet_perf_nl_cmd_get_stats(struct sk_buff *skb, struct genl_info *info)
 {
@@ -755,6 +775,108 @@ err1:
 err0:
 	return ret;
 }
+
+static int rmnet_perf_nl_cmd_ecn_update(struct sk_buff *skb,
+					struct genl_info *info)
+{
+	u32 hash_key;
+	u32 prob;
+	u8 type;
+	int rc;
+
+	if (!info->attrs[RMNET_PERF_ATTR_ECN_HASH] ||
+	    !info->attrs[RMNET_PERF_ATTR_ECN_PROB] ||
+	    !info->attrs[RMNET_PERF_ATTR_ECN_TYPE]) {
+		GENL_SET_ERR_MSG(info,
+				 "Must provide ECN hash, probability, & type");
+		return -EINVAL;
+	}
+
+	hash_key = nla_get_u32(info->attrs[RMNET_PERF_ATTR_ECN_HASH]);
+	prob = nla_get_u32(info->attrs[RMNET_PERF_ATTR_ECN_PROB]);
+	type = nla_get_u8(info->attrs[RMNET_PERF_ATTR_ECN_TYPE]);
+	rc = rmnet_perf_tcp_update_ecn_prob(hash_key, prob,
+					    type == RMNET_PERF_ECN_TYPE_DROP);
+	if (rc) {
+		GENL_SET_ERR_MSG(info, "Updating probability failed");
+		return rc;
+	}
+
+	return 0;
+}
+
+static int rmnet_perf_nl_cmd_ecn_drop_stat(struct sk_buff *skb,
+					   struct genl_info *info)
+{
+	struct sk_buff *reply;
+	int msg_size = nla_total_size(sizeof(u32)) * 2;
+	u32 hash_key;
+	u32 drops = 0;
+	int rc;
+	void *hdr;
+
+	if (!info->attrs[RMNET_PERF_ATTR_ECN_HASH]) {
+		GENL_SET_ERR_MSG(info, "Must provide hash value");
+		return -EINVAL;
+	}
+
+	hash_key = nla_get_u32(info->attrs[RMNET_PERF_ATTR_ECN_HASH]);
+	rc = rmnet_perf_tcp_get_ecn_drops(hash_key, &drops);
+	if (rc) {
+		GENL_SET_ERR_MSG(info, "Fetching drop count failed");
+		return rc;
+	}
+
+	reply = genlmsg_new(msg_size, GFP_KERNEL);
+	if (!reply) {
+		GENL_SET_ERR_MSG(info, "Allocating response failed");
+		return -ENOMEM;
+	}
+
+	hdr = genlmsg_put_reply(reply, info, &rmnet_perf_nl_family, 0,
+				RMNET_PERF_CMD_ECN_DROP_STATS);
+	if (!hdr) {
+		GENL_SET_ERR_MSG(info, "Building response failed");
+		kfree_skb(reply);
+		return -EINVAL;
+	}
+
+	nla_put_u32(reply, RMNET_PERF_ATTR_ECN_DROPS, drops);
+	genlmsg_end(reply, hdr);
+	genlmsg_reply(reply, info);
+	return 0;
+}
+
+static const struct genl_ops rmnet_perf_nl_ops[] = {
+	{
+		.cmd = RMNET_PERF_CMD_GET_STATS,
+		.doit = rmnet_perf_nl_cmd_get_stats,
+	},
+	{
+		.cmd = RMNET_PERF_CMD_MAP_CMD,
+		.doit = rmnet_perf_nl_cmd_map_cmd_req,
+	},
+	{
+		.cmd = RMNET_PERF_CMD_ECN_UPDATE,
+		.doit = rmnet_perf_nl_cmd_ecn_update,
+	},
+	{
+		.cmd = RMNET_PERF_CMD_ECN_DROP_STATS,
+		.doit = rmnet_perf_nl_cmd_ecn_drop_stat,
+	},
+};
+
+static struct genl_family rmnet_perf_nl_family __ro_after_init = {
+	.hdrsize = 0,
+	.name = RMNET_PERF_GENL_FAMILY_NAME,
+	.version = RMNET_PERF_GENL_VERSION,
+	.maxattr = RMNET_PERF_ATTR_MAX,
+	.policy = rmnet_perf_nl_policy,
+	.ops = rmnet_perf_nl_ops,
+	.n_ops = ARRAY_SIZE(rmnet_perf_nl_ops),
+	.mcgrps = rmnet_perf_nl_mcgrps,
+	.n_mcgrps = ARRAY_SIZE(rmnet_perf_nl_mcgrps),
+};
 
 int rmnet_perf_nl_register(void)
 {
