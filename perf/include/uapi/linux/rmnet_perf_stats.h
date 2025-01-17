@@ -17,6 +17,8 @@
 #define RMNET_PERF_CMD_UNSPEC 0
 #define RMNET_PERF_CMD_GET_STATS 1
 #define RMNET_PERF_CMD_MAP_CMD 2
+#define RMNET_PERF_CMD_ECN_UPDATE 3
+#define RMNET_PERF_CMD_ECN_DROP_STATS 4
 
 /* Update RMNET_PERF_ATTR_MAX with the maximum value if a new entry is added */
 #define RMNET_PERF_ATTR_UNSPEC 0
@@ -25,6 +27,13 @@
 #define RMNET_PERF_ATTR_MAP_CMD_REQ 3
 #define RMNET_PERF_ATTR_MAP_CMD_RESP 4
 #define RMNET_PERF_ATTR_MAP_CMD_IND 5
+#define RMNET_PERF_ATTR_ECN_HASH 6
+#define RMNET_PERF_ATTR_ECN_PROB 7
+#define RMNET_PERF_ATTR_ECN_TYPE 8
+#define RMNET_PERF_ATTR_ECN_DROPS 9
+
+#define RMNET_PERF_ECN_TYPE_DROP 0
+#define RMNET_PERF_ECN_TYPE_MARK 1
 
 struct rmnet_perf_stats_req {
 	__u8 mux_id;
