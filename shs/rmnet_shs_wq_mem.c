@@ -54,7 +54,7 @@ static int rmnet_shs_open_global(struct inode *inode, struct file *filp)
 		if (!info)
 			goto fail;
 
-		info->data = (char *)__get_free_pages(GFP_KERNEL | __GFP_COMP, 4);
+		info->data = (char *)__get_free_pages(GFP_ATOMIC | __GFP_COMP, 4);
 		if (!info->data) {
 			kfree(info);
 			goto fail;
