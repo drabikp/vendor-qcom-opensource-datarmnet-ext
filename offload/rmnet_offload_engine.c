@@ -82,14 +82,26 @@ static bool rmnet_offload_engine_ip_mismatch(struct rmnet_offload_flow *flow,
 		    flow_hdr->roh_ip_frag_off ^ pkt_hdr->roh_ip_frag_off ||
 		    flow_hdr->roh_ip_len ^ pkt_hdr->roh_ip_len)
 			return true;
+
+		/* Fake a mismatch here if we're not allowing ECN packets
+		 * to be combined.
+		 */
+		if ((pkt_hdr->roh_ip_tos & 0x3) == 0x3 &&
+		    rmnet_offload_knob_get(RMNET_OFFLOAD_KNOB_ECN_SEGMENT))
+			return true;
 	} else if (pkt->roi_hdrs.roh_ip_proto == 0x6) {
 		__be32 flow_word, pkt_word;
 		__be32 word_mismatch;
+		__be32 ecn_field = __cpu_to_be32(0x00300000);
 
 		flow_word = flow->rof_hdrs.roh_flag_word;
 		pkt_word = pkt->roi_hdrs.roh_flag_word;;
 		word_mismatch = flow_word ^ pkt_word;
 		if (word_mismatch & htonl(0x0FF00000))
+			return true;
+
+		if ((pkt_word & ecn_field) == ecn_field &&
+		    rmnet_offload_knob_get(RMNET_OFFLOAD_KNOB_ECN_SEGMENT))
 			return true;
 	}
 
