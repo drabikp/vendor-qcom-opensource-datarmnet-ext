@@ -93,6 +93,7 @@ static int __rmnet_offload_knob_set(const char *val,
 RMNET_OFFLOAD_KNOB_HANDLER(RMNET_OFFLOAD_KNOB_TCP_BYTE_LIMIT);
 RMNET_OFFLOAD_KNOB_HANDLER(RMNET_OFFLOAD_KNOB_UDP_BYTE_LIMIT);
 RMNET_OFFLOAD_KNOB_HANDLER(RMNET_OFFLOAD_KNOB_ENGINE_MODE);
+RMNET_OFFLOAD_KNOB_HANDLER(RMNET_OFFLOAD_KNOB_ECN_SEGMENT);
 
 /* Our knob array. This stores the knob metadata (range of values, get and set
  * operations, callback, initial value), and the current value of the knob.
@@ -108,6 +109,8 @@ rmnet_offload_knobs[RMNET_OFFLOAD_KNOB_MAX] = {
 				   RMNET_OFFLOAD_ENGINE_MODE_MIN,
 				   RMNET_OFFLOAD_ENGINE_MODE_MAX,
 				   rmnet_offload_engine_mode_change),
+	RMNET_OFFLOAD_KNOB_DECLARE(RMNET_OFFLOAD_KNOB_ECN_SEGMENT, 0, 0, 1,
+				   NULL),
 };
 
 /* Handle changing the knob value. Checks to make sure the value given is in
@@ -165,6 +168,8 @@ static int __rmnet_offload_knob_set(const char *val,
 RMNET_OFFLOAD_KNOB_INIT(rmnet_offload_knob0, RMNET_OFFLOAD_KNOB_TCP_BYTE_LIMIT);
 RMNET_OFFLOAD_KNOB_INIT(rmnet_offload_knob1, RMNET_OFFLOAD_KNOB_UDP_BYTE_LIMIT);
 RMNET_OFFLOAD_KNOB_INIT(rmnet_offload_knob2, RMNET_OFFLOAD_KNOB_ENGINE_MODE);
+RMNET_OFFLOAD_KNOB_INIT(rmnet_offload_ecn_segment,
+			RMNET_OFFLOAD_KNOB_ECN_SEGMENT);
 
 /* Retrieve the value of a knob */
 u64 rmnet_offload_knob_get(u32 knob) {
