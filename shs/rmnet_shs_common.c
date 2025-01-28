@@ -15,6 +15,7 @@
 #include <linux/kernel.h>
 #include <linux/smp.h>
 #include <linux/ipv6.h>
+#include <net/dsfield.h>
 
 
 #define INCREMENT 1
@@ -414,6 +415,46 @@ void rmnet_shs_get_update_skb_hdr_info(struct sk_buff *skb,
 		/* Non TCP or UDP proto, dont copy transport header */
 	}
 
+}
+
+int rmnet_shs_is_skb_l4s(struct sk_buff *skb)
+{
+	u8 dsfield;
+
+	/* It's tempting to use the inet_ecn helpers for this, but as those
+	 * rely on skb->network_header being set and stuff being linear
+	 * (which might not be the case depending on the path this SKB took...)
+	 * we err on the safe side.
+	 */
+	switch (skb->protocol) {
+	case __cpu_to_be16(ETH_P_IP):
+	{
+		struct iphdr *iph, __iph;
+
+		iph = rmnet_shs_header_ptr(skb, 0, sizeof(*iph), &__iph);
+		if (!iph)
+			return 0;
+
+		dsfield = ipv4_get_dsfield(iph);
+		break;
+	}
+	case __cpu_to_be16(ETH_P_IPV6):
+	{
+		struct ipv6hdr *ip6h, __ip6h;
+
+		ip6h = rmnet_shs_header_ptr(skb, 0, sizeof(*ip6h), &__ip6h);
+		if (!ip6h)
+			return 0;
+
+		dsfield = ipv6_get_dsfield(ip6h);
+		break;
+	}
+	default:
+		return 0;
+	}
+
+	/* L4S sets ECT(1) */
+	return !!((dsfield & 0x3) == 0x1);
 }
 
 /* Forms a new hash from the incoming hash based on the number of cores

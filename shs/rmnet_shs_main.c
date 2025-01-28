@@ -1328,6 +1328,13 @@ static void rmnet_shs_chain_to_skb_list(struct sk_buff *skb,
 	node->skb_list.num_parked_skbs += 1;
 	rmnet_shs_cfg.num_pkts_parked  += 1;
 
+	/* Theoretically, this should be set on every packet in the L4S flow.
+	 * IN practice, who knows if that is true or not. In any case, once
+	 * we see it, we don't need to check again.
+	 */
+	if (!node->l4s)
+		node->l4s = rmnet_shs_is_skb_l4s(skb);
+
 	if (unlikely(pushflush))
 		rmnet_shs_flush_lock_table(0, RMNET_RX_CTXT);
 
@@ -2014,6 +2021,7 @@ int rmnet_shs_assign(struct sk_buff *skb, struct rmnet_shs_clnt_s *clnt_cfg)
 		INIT_LIST_HEAD(&node_p->node_id);
 		/* Set ip header / transport header / transport proto */
 		rmnet_shs_get_update_skb_hdr_info(skb, node_p);
+		node_p->l4s = rmnet_shs_is_skb_l4s(skb);
 
 		/* Workqueue utilizes some of the values from above
 		 * initializations . Therefore, we need to request

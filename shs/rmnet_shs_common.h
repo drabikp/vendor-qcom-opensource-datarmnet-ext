@@ -74,6 +74,7 @@ void rmnet_shs_get_update_skb_hdr_info(struct sk_buff *skb,
 
 void *rmnet_shs_header_ptr(struct sk_buff *skb, u32 offset, u32 hlen,
 				  void *buf);
+int rmnet_shs_is_skb_l4s(struct sk_buff *skb);
 u32 rmnet_shs_form_hash(u32 index, u32 maplen, u32 hash, u8 setasync);
 void rmnet_shs_deliver_skb(struct sk_buff *skb);
 void rmnet_shs_deliver_skb_wq(struct sk_buff *skb);
