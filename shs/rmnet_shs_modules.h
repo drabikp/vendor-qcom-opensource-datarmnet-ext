@@ -67,4 +67,13 @@ extern unsigned int rmnet_shs_restart_count;
 extern unsigned int rmnet_shs_no_sync_packets;
 extern unsigned int rmnet_shs_no_sync_off;
 extern unsigned int rmnet_shs_reserve_on;
+extern unsigned int rmnet_shs_wake;
+extern unsigned int rmnet_shs_perf_duration;
+extern unsigned int rmnet_shs_max_qmap_pkt;
+extern unsigned int rmnet_shs_max_qmap_wait;
+extern unsigned int rmnet_shs_max_qmap_steer;
+extern unsigned int rmnet_shs_max_phy_backlog;
+extern unsigned int rmnet_shs_esp_pkts;
+extern unsigned int rmnet_shs_pb_boost_timer_ms;
+extern unsigned int rmnet_shs_freq_enable;
 #endif
