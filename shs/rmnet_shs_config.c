@@ -27,21 +27,6 @@ static struct notifier_block rmnet_shs_dev_notifier __read_mostly = {
 	.priority = 2,
 };
 
-/* Version array, version's should be inserted at the end */
-static char *rmnet_shs_version[] = {"43a6b",
-				    "a2ce6",
-				    "d1ab1",
-				    "d879b",
-				    "ac626",
-				    "5cff7",
-				    "a586b"
-				   };
-
-
-module_param_array(rmnet_shs_version, charp, NULL, 0444);
-MODULE_PARM_DESC(rmnet_shs_version, "Version of shs driver");
-
-
 static const struct rmnet_module_hook_register_info
 rmnet_shs_ll_entry_hook = {
 		.hooknum = RMNET_MODULE_HOOK_SHS_SKB_LL_ENTRY,
@@ -93,10 +78,6 @@ static int rmnet_shs_dev_notify_cb(struct notifier_block *nb,
 		return NOTIFY_DONE;
 
 	switch (event) {
-
-	case NETDEV_DOWN:
-		rmnet_shs_wq_reset_ep_active(dev);
-		break;
 	case NETDEV_UNREGISTER:
 		rmnet_vnd_total--;
 
@@ -104,9 +85,8 @@ static int rmnet_shs_dev_notify_cb(struct notifier_block *nb,
 		 * phy_dev is going down.
 		 */
 		if (!rmnet_vnd_total && rmnet_shs_cfg.rmnet_shs_init_complete) {
-			unsigned int cpu_switch;
 
-			pr_info("rmnet_shs deinit %s going down ", dev->name);
+			pr_info("rmnet_shs deinit %s going down\n", dev->name);
 			rmnet_shs_skb_entry_disable();
 			rmnet_shs_switch_disable();
 
@@ -120,12 +100,12 @@ static int rmnet_shs_dev_notify_cb(struct notifier_block *nb,
 
 			rmnet_shs_cancel_table();
 			rmnet_shs_ll_deinit();
-			cpu_switch = rmnet_shs_rx_wq_exit();
+			rmnet_shs_rx_wq_exit();
 			/* Only Unhook vh if we registered in 1st place */
 			if (rmnet_shs_cfg.is_reg_dl_mrk_ind)
 				rmnet_shs_vh_unset();
 			rmnet_shs_wq_exit();
-			rmnet_shs_exit(cpu_switch);
+			rmnet_shs_exit();
 			trace_rmnet_shs_high(RMNET_SHS_MODULE,
 					     RMNET_SHS_MODULE_INIT_WQ,
 					     0xDEF, 0xDEF, 0xDEF,
@@ -137,11 +117,11 @@ static int rmnet_shs_dev_notify_cb(struct notifier_block *nb,
 		rmnet_vnd_total++;
 
 		if (rmnet_vnd_total && !rmnet_shs_cfg.rmnet_shs_init_complete) {
-			pr_info("rmnet_shs initializing %s", dev->name);
+			pr_info("rmnet_shs initializing %s\n", dev->name);
 			priv = netdev_priv(dev);
 			port = rmnet_get_port(priv->real_dev);
 			if (!port) {
-				pr_err("rmnet_shs: invalid rmnet_port");
+				pr_err("rmnet_shs: invalid rmnet_port\n");
 				break;
 			}
 			rmnet_shs_init(priv->real_dev, dev);
@@ -156,7 +136,7 @@ static int rmnet_shs_dev_notify_cb(struct notifier_block *nb,
 
 			port = rmnet_shs_cfg.port;
 			if (!port) {
-				pr_err("rmnet_shs: invalid rmnet_cfg_port");
+				pr_err("rmnet_shs: invalid rmnet_cfg_port\n");
 				break;
 			}
 
@@ -193,11 +173,7 @@ static int rmnet_shs_dev_notify_cb(struct notifier_block *nb,
 				pr_err("%s(): rmnet ps_ind registration fail\n",
 				       __func__);
 
-			rmnet_shs_wq_set_ep_active(dev);
-			rmnet_shs_wq_refresh_ep_masks();
-			rmnet_shs_wq_refresh_new_flow_list();
 			/* Mark active before RCU pointer */
-			rmnet_shs_update_cfg_mask();
 			trace_rmnet_shs_high(RMNET_SHS_MODULE,
 					     RMNET_SHS_MODULE_INIT_WQ,
 					     0xDEF, 0xDEF, 0xDEF,
@@ -211,7 +187,6 @@ static int rmnet_shs_dev_notify_cb(struct notifier_block *nb,
 			/* Needed so we don't mark active twice*/
 			break;
 		}
-		rmnet_shs_wq_set_ep_active(dev);
 
 		break;
 
