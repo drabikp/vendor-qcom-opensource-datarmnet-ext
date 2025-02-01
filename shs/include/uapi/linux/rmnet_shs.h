@@ -260,6 +260,16 @@ struct rmnet_shs_wq_flow_info {
 	__u8 timeout;
 	__u8 seq;
 	__u8 opcode;
+	union {
+		__be32 mask;
+		struct in6_addr v6_mask;
+	} dest_ip_addr_mask;
+	union {
+		__be32 mask;
+		struct in6_addr v6_mask;
+	} src_ip_addr_mask;
+	__u16 src_port_max;
+	__u16 dest_port_max;
 };
 
 /* Types of suggestions made by shs wq
