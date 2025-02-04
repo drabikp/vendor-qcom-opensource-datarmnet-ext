@@ -64,7 +64,7 @@ struct __attribute__((__packed__ )) rmnet_shs_block_hdr {
 	__u8 version; // struct version set to SHS_SHARED_MEM_BLOCK_STRUCT_VERSION
 
 	// Common fields
-	__s64 cur_time; // time at which values were queried
+	__u64 cur_time; // time at which values were queried
 	__u64 pb_marker_seq;
 	__u8 isolation_mask;
 	__u8 reserve_mask;
