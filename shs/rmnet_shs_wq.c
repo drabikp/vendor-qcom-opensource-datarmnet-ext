@@ -473,7 +473,7 @@ static void rmnet_shs_wq_update_hash_stats(struct rmnet_shs_wq_hstat_s *hstats_p
 	hstats_p->rx_skb = node_p->num_skb;
 	hstats_p->rx_ll_skb = node_p->num_ll_skb;
 	hstats_p->ll_diff = hstats_p->rx_ll_skb !=  hstats_p->last_rx_ll_skb;
-	hstats_p->low_latency = hstats_p->low_latency == RMNET_SHS_LOW_LATENCY_MATCH;
+	hstats_p->low_latency = node_p->low_latency;
 
 	hstats_p->rx_coal_skb = node_p->num_coal_skb;
 	hstats_p->hw_coal_bytes = node_p->hw_coal_bytes;
@@ -947,7 +947,7 @@ void rmnet_shs_wq_cleanup_hash_tbl(u8 force_clean, u32 hash_to_clean)
 
 			if (node_p) {
 			/* Low latency nodes need to be cleared from LL ht list with LL locking */
-				if(node_p->low_latency) {
+				if (node_p->low_latency == RMNET_SHS_TRUE_LOW_LATENCY) {
 					spin_lock_bh(&rmnet_shs_ll_ht_splock);
 					rmnet_shs_cpu_node_remove(node_p);
 					hash_del_rcu(&node_p->list);

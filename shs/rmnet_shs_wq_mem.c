@@ -167,7 +167,8 @@ void rmnet_shs_wq_mem_update_global(void)
 		global_flow[idx].cpu_num = hnode->current_cpu;
 		global_flow[idx].mux_id = hnode->mux_id;
 		global_flow[idx].trans_proto = hnode->skb_tport_proto;
-		global_flow[idx].is_ll_flow = hnode->low_latency;
+		global_flow[idx].is_ll_flow = hnode->low_latency == RMNET_SHS_LOW_LATENCY_MATCH;
+		global_flow[idx].is_ll_true_flow = hnode->low_latency == RMNET_SHS_TRUE_LOW_LATENCY;
 		global_flow[idx].is_l4s_flow = hnode->node->l4s;
 		global_flow[idx].rx_skbs = hnode->rx_skb;
 		global_flow[idx].rx_bytes = hnode->rx_bytes;

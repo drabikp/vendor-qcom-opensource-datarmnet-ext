@@ -47,9 +47,9 @@ struct __attribute__((__packed__ ))  rmnet_shs_flow_entry_s {
 
 	// Bitfield to store smaller info like ip family and other flags
 	__u8 ip_family:4;
-	__u8 is_ll_flow:1; // is low latency flow
+	__u8 is_ll_flow:1; // is SW low latency matched flow
 	__u8 is_l4s_flow:1; // seen packets marked with ECT(1)
-	__u8 reserved_1:1;
+	__u8 is_ll_true_flow:1; // is using LL codepath, SW LL or HW LL
 	__u8 reserved_2:1;
 
 	// packet/byte counters and some other values

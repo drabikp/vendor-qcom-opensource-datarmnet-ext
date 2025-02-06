@@ -1896,22 +1896,30 @@ int rmnet_shs_assign(struct sk_buff *skb, struct rmnet_shs_clnt_s *clnt_cfg)
 
 			is_match_found = 1;
 			is_shs_reqd = 1;
-			/* If flow is marked as a LL flow investigate if fastpath is nessecary */
-			/* If flow is not coming in LL irq path then this flow will be */
+			/* If flow is marked as a LL flow investigate i.e check if fastpath is nessecary */
+			/* If flow is not coming in LL irq path then this flow will be checked once*/
 			if (node_p->low_latency) {
-				if (node_p->low_latency == RMNET_SHS_LOW_LATENCY_CHECK) {
-						if (rmnet_shs_is_filter_match(skb)) {
-							node_p->low_latency = RMNET_SHS_LOW_LATENCY_MATCH;
-						} else {
-							node_p->low_latency = RMNET_SHS_NOT_LOW_LATENCY;
-						}
+				if (node_p->low_latency == RMNET_SHS_LOW_LATENCY_CHECK && rmnet_shs_is_filter_match(skb)) {
+					node_p->low_latency = RMNET_SHS_LOW_LATENCY_MATCH;
+				} else if (node_p->low_latency == RMNET_SHS_LOW_LATENCY_CHECK){
+					node_p->low_latency = RMNET_SHS_NOT_LOW_LATENCY;
 				}
-				spin_unlock_bh(&rmnet_shs_ht_splock);
-				/* Does not take coalescing so inaccurate but LL cares about speed */
-				node_p->num_skb += 1;
-				node_p->num_skb_bytes += skb->len;
-				rmnet_shs_ll_handler(skb, clnt_cfg);
-				return 0;
+
+				if (node_p->low_latency == RMNET_SHS_LOW_LATENCY_MATCH) {
+					spin_unlock_bh(&rmnet_shs_ht_splock);
+					/* Does not take coalescing so inaccurate but LL cares about speed */
+					if (skb_shinfo(skb)->gso_segs) {
+						node_p->num_skb += skb_shinfo(skb)->gso_segs;
+					} else {
+						node_p->num_skb += 1;
+					}
+					node_p->num_skb_bytes += skb->len;
+					node_p->num_coal_skb += 1;
+					node_p->hw_coal_bytes += RMNET_SKB_CB(skb)->coal_bytes;
+					node_p->hw_coal_bufsize += RMNET_SKB_CB(skb)->coal_bufsize;
+					rmnet_shs_ll_handler(skb, clnt_cfg);
+					return 0;
+				}
 			}
 
 			if (node_p->phy) {
@@ -2064,6 +2072,15 @@ int rmnet_shs_assign(struct sk_buff *skb, struct rmnet_shs_clnt_s *clnt_cfg)
 		if (rmnet_shs_is_filter_match(skb)) {
 			node_p->low_latency = RMNET_SHS_LOW_LATENCY_MATCH;
 			spin_unlock_bh(&rmnet_shs_ht_splock);
+			if (skb_shinfo(skb)->gso_segs) {
+				node_p->num_skb += skb_shinfo(skb)->gso_segs;
+			} else {
+				node_p->num_skb += 1;
+			}
+			node_p->num_skb_bytes += skb->len;
+			node_p->num_coal_skb += 1;
+			node_p->hw_coal_bytes += RMNET_SKB_CB(skb)->coal_bytes;
+			node_p->hw_coal_bufsize += RMNET_SKB_CB(skb)->coal_bufsize;
 			rmnet_shs_ll_handler(skb, clnt_cfg);
 			return 0;
 		}

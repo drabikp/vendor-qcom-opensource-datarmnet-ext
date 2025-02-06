@@ -495,7 +495,7 @@ void rmnet_shs_remove_llflow(struct rmnet_shs_wq_flow_node  *node)
 
 	spin_lock_bh(&rmnet_shs_hstat_tbl_lock);
 	list_for_each_entry(hnode, &rmnet_shs_wq_hstat_tbl, hstat_node_id) {
-		if (hnode->node && !hnode->node->low_latency) {
+		if (hnode->node && hnode->node->low_latency != RMNET_SHS_TRUE_LOW_LATENCY) {
 			hnode->node->low_latency= RMNET_SHS_LOW_LATENCY_CHECK;
 		}
 	}
@@ -585,8 +585,8 @@ void rmnet_shs_add_llflow(struct rmnet_shs_wq_flow_node  *node)
 	rm_err("SHS_LL: %s\n", "Setting low latency flow check for all flows");
 	spin_lock_bh(&rmnet_shs_hstat_tbl_lock);
 	list_for_each_entry(hnode, &rmnet_shs_wq_hstat_tbl, hstat_node_id) {
-		if (hnode->node && !hnode->node->low_latency) {
-			hnode->node->low_latency= RMNET_SHS_LOW_LATENCY_CHECK;
+		if (hnode->node && hnode->node->low_latency != RMNET_SHS_TRUE_LOW_LATENCY) {
+			hnode->node->low_latency = RMNET_SHS_LOW_LATENCY_CHECK;
 		}
 
 	}
@@ -631,7 +631,7 @@ int rmnet_shs_ll_handler(struct sk_buff *skb, struct rmnet_shs_clnt_s *clnt_cfg)
 
 	rmnet_shs_ll_pkts++;
 
-	hash = skb_get_hash(skb);
+	hash = skb_get_hash(skb) ^ RMNET_SHS_TRUE_LOW_LATENCY;
 	/*deliver non TCP/UDP packets right away*/
 	/* If stmp all is set break and don't check reqd */
 	if (!(clnt_cfg->config & RMNET_SHS_STMP_ALL) &&
@@ -645,13 +645,10 @@ int rmnet_shs_ll_handler(struct sk_buff *skb, struct rmnet_shs_clnt_s *clnt_cfg)
 
 		hash_for_each_possible_safe(rmnet_shs_ll_ht, node_p, tmp, list,
 					    hash) {
-
 			if (hash != node_p->hash)
 				continue;
 			is_match_found = 1;
-
 			node_p->map_cpu = rmnet_shs_ll_flow_cpu;
-
 			node_p->map_index = rmnet_shs_idx_from_cpu(node_p->map_cpu, map);
 			break;
 		}
@@ -680,12 +677,11 @@ int rmnet_shs_ll_handler(struct sk_buff *skb, struct rmnet_shs_clnt_s *clnt_cfg)
 		node_p->custom_map = clnt_cfg->map_mask;
 		node_p->custom_len = rmnet_shs_cfg.map_mask;
 		node_p->dev = skb->dev;
-		node_p->hash = skb->hash;
+		node_p->hash = skb->hash ^ RMNET_SHS_TRUE_LOW_LATENCY;
 		node_p->map_cpu = ll_cpu;
-		node_p->low_latency = 1;
+		node_p->low_latency = RMNET_SHS_TRUE_LOW_LATENCY;
 		node_p->map_index = rmnet_shs_idx_from_cpu(node_p->map_cpu, map);
 		node_p->map_cpu = raw_smp_processor_id();
-		node_p->map_index = rmnet_shs_idx_from_cpu(node_p->map_cpu, map);
 
 		INIT_LIST_HEAD(&node_p->node_id);
 		/* Set ip header / transport header / transport proto */
@@ -709,7 +705,7 @@ int rmnet_shs_ll_handler(struct sk_buff *skb, struct rmnet_shs_clnt_s *clnt_cfg)
 			       node_p->hash, node_p->hstats->mux_id);
 		}
 		rmnet_shs_cpu_node_add(node_p, &cpu_node_tbl_p->node_list_id);
-		hash_add_rcu(rmnet_shs_ll_ht, &node_p->list, skb->hash);
+		hash_add_rcu(rmnet_shs_ll_ht, &node_p->list, node_p->hash);
 		is_match_found = 1;
 		break;
 
@@ -752,12 +748,8 @@ int rmnet_shs_ll_handler(struct sk_buff *skb, struct rmnet_shs_clnt_s *clnt_cfg)
 
 		if (skb_shinfo(skb)->gso_segs) {
 			node_p->num_skb += skb_shinfo(skb)->gso_segs;
-			rmnet_shs_cpu_node_tbl[node_p->map_cpu].parkedlen++;
-			node_p->skb_list.skb_load += skb_shinfo(skb)->gso_segs;
 		} else {
 			node_p->num_skb += 1;
-			rmnet_shs_cpu_node_tbl[node_p->map_cpu].parkedlen++;
-			node_p->skb_list.skb_load++;
 		}
 		node_p->num_coal_skb += 1;
 		node_p->hw_coal_bytes += RMNET_SKB_CB(skb)->coal_bytes;
@@ -791,17 +783,12 @@ void rmnet_shs_ll_deinit(void)
 
 	rm_err("%s", "SHS_LL: De-init LL book-keeping");
 	spin_lock_bh(&rmnet_shs_ll_ht_splock);
-	hash_for_each_safe(rmnet_shs_ll_ht, bkt, tmp, node, list)
-	{
-		hash_del_rcu(&node->list);
-	}
-
 	hash_for_each_safe(rmnet_shs_ll_filter_ht, bkt, tmp, node, list)
 	{
 		hash_del_rcu(&node->list);
 		kfree(node);
-        rmnet_shs_cfg.num_filters--;
-        rmnet_shs_filter_count--;
+	        rmnet_shs_cfg.num_filters--;
+		rmnet_shs_filter_count--;
 	}
 	spin_unlock_bh(&rmnet_shs_ll_ht_splock);
 	rm_err("%s", "SHS_LL: De-init LL book-keeping exit");
