@@ -149,7 +149,7 @@ void rmnet_shs_wq_mem_update_global(void)
 	global_blk_hdr.reserve_mask = rmnet_shs_reserve_mask;
 	global_blk_hdr.titanium_mask = 0x0;
 	global_blk_hdr.online_mask = rmnet_shs_get_online_mask();
-	global_blk_hdr.cur_time = ktime_get_clocktai_ns();
+	global_blk_hdr.cur_time = ktime_get_boottime_ns();
 	if (rmnet_shs_cfg.port) {
 		global_blk_hdr.pb_marker_seq = rmnet_shs_cfg.port->stats.pb_marker_seq;
 	}
