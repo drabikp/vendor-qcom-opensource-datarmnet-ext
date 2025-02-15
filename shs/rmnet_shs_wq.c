@@ -894,8 +894,6 @@ void rmnet_shs_wq_process_wq(struct work_struct *work)
 	rmnet_shs_wq_update_stats();
 	spin_unlock_bh(&rmnet_shs_ep_lock);
 
-	/*Invoke after both the locks are released*/
-	rmnet_shs_wq_cleanup_hash_tbl(PERIODIC_CLEAN, 0);
 
 	jiffies = msecs_to_jiffies(rmnet_shs_wq_interval_ms);
 
