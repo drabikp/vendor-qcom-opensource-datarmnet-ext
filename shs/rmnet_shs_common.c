@@ -101,7 +101,7 @@ void rmnet_shs_cpu_list_remove(struct rmnet_shs_wq_hstat_s *hnode)
 			    RMNET_SHS_WQ_CPU_HSTAT_TBL_DEL,
 			    0xDEF, 0xDEF, 0xDEF, 0xDEF, hnode, NULL);
     spin_lock_bh(&rmnet_shs_hstat_tbl_lock);
-    list_del_init(&hnode->cpu_node_id);
+    list_del_rcu(&hnode->cpu_node_id);
     spin_unlock_bh(&rmnet_shs_hstat_tbl_lock);
 }
 
@@ -113,7 +113,7 @@ void rmnet_shs_cpu_list_add(struct rmnet_shs_wq_hstat_s *hnode,
 			    0xDEF, 0xDEF, 0xDEF, 0xDEF, hnode, NULL);
 
     spin_lock_bh(&rmnet_shs_hstat_tbl_lock);
-    list_add(&hnode->cpu_node_id, head);
+    list_add_rcu(&hnode->cpu_node_id, head);
     spin_unlock_bh(&rmnet_shs_hstat_tbl_lock);
 }
 
@@ -144,7 +144,7 @@ void rmnet_shs_cpu_node_remove(struct rmnet_shs_skbn_s *node)
 	SHS_TRACE_LOW(RMNET_SHS_CPU_NODE, RMNET_SHS_CPU_NODE_FUNC_REMOVE,
 			    0xDEF, 0xDEF, 0xDEF, 0xDEF, NULL, NULL);
 
-	list_del_init(&node->node_id);
+	list_del_rcu(&node->node_id);
 	rmnet_shs_change_cpu_num_flows(node->map_cpu, DECREMENT);
 
 }
@@ -155,7 +155,7 @@ void rmnet_shs_cpu_node_add(struct rmnet_shs_skbn_s *node,
 	SHS_TRACE_LOW(RMNET_SHS_CPU_NODE, RMNET_SHS_CPU_NODE_FUNC_ADD,
 			    0xDEF, 0xDEF, 0xDEF, 0xDEF, NULL, NULL);
 
-	list_add(&node->node_id, hd);
+	list_add_rcu(&node->node_id, hd);
 	rmnet_shs_change_cpu_num_flows(node->map_cpu, INCREMENT);
 }
 

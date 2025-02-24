@@ -548,7 +548,6 @@ static int rmnet_shs_wq_chng_flow_cpu(u16 old_cpu, u16 new_cpu,
 {
 	struct rmnet_shs_skbn_s *node_p;
 	struct rmnet_shs_wq_hstat_s *hstat_p;
-	struct hlist_node *tmp;
 	int rc = 0;
 	u16 bkt;
 
@@ -557,14 +556,15 @@ static int rmnet_shs_wq_chng_flow_cpu(u16 old_cpu, u16 new_cpu,
 		return 0;
 	}
 	spin_lock_bh(&rmnet_shs_ht_splock);
-	hash_for_each_safe(RMNET_SHS_HT, bkt, tmp, node_p, list) {
+	rcu_read_lock();
+	hash_for_each_rcu(RMNET_SHS_HT, bkt, node_p, list) {
 		if (!node_p)
 			continue;
 
 		if (!node_p->hstats)
 			continue;
 
-		hstat_p = node_p->hstats;
+		hstat_p = rcu_dereference(node_p->hstats);
 
 		if (hash_to_move != 0) {
 			/* If hash_to_move is given, only move that flow,
@@ -603,6 +603,7 @@ static int rmnet_shs_wq_chng_flow_cpu(u16 old_cpu, u16 new_cpu,
 			rc |= 1;
 		}
 	}
+	rcu_read_unlock();
 	spin_unlock_bh(&rmnet_shs_ht_splock);
 
 	return rc;
@@ -707,7 +708,6 @@ static int rmnet_shs_wq_check_cpu_move_for_ep(u16 current_cpu, u16 dest_cpu)
 
 	return 1;
 }
-
 /* rmnet_shs_wq_try_to_move_flow - try to make a flow suggestion
  * return 1 if flow move was suggested, otherwise return 0
  */
@@ -751,14 +751,14 @@ int rmnet_shs_wq_set_flow_segmentation(u32 hash_to_set, u8 segs_per_skb)
 	u16 bkt;
 
 	spin_lock_bh(&rmnet_shs_ht_splock);
-	hash_for_each(RMNET_SHS_HT, bkt, node_p, list) {
+	rcu_read_lock();
+	hash_for_each_rcu(RMNET_SHS_HT, bkt, node_p, list) {
 		if (!node_p)
 			continue;
 
-		if (!node_p->hstats)
+		hstat_p = rcu_dereference(node_p->hstats);
+		if (!hstat_p)
 			continue;
-
-		hstat_p = node_p->hstats;
 
 		if (hstat_p->hash != hash_to_set)
 			continue;
@@ -771,10 +771,12 @@ int rmnet_shs_wq_set_flow_segmentation(u32 hash_to_set, u8 segs_per_skb)
 				hstat_p->hash, segs_per_skb,
 				0xDEF, 0xDEF, hstat_p, NULL);
 
-		node_p->hstats->segs_per_skb = segs_per_skb;
+		hstat_p->segs_per_skb = segs_per_skb;
+		rcu_read_unlock();
 		spin_unlock_bh(&rmnet_shs_ht_splock);
 		return 1;
 	}
+	rcu_read_unlock();
 	spin_unlock_bh(&rmnet_shs_ht_splock);
 
 	rm_err("SHS_HT: >> segmentation on hash 0x%x segs_per_skb %u not set - hash not found",
@@ -911,8 +913,9 @@ void rmnet_shs_wq_cleanup_hash_tbl(u8 force_clean, u32 hash_to_clean)
 	ktime_t tns2s;
 	struct rmnet_shs_wq_hstat_s *hnode = NULL;
 	struct list_head *ptr = NULL, *next = NULL;
+	int lock_flag = 0;
+       
 
-	rcu_read_lock();
 	spin_lock_bh(&rmnet_shs_ht_splock);
 	list_for_each_safe(ptr, next, &rmnet_shs_wq_hstat_tbl) {
 		hnode = list_entry(ptr, struct rmnet_shs_wq_hstat_s, hstat_node_id);
@@ -942,48 +945,40 @@ void rmnet_shs_wq_cleanup_hash_tbl(u8 force_clean, u32 hash_to_clean)
 					       RMNET_SHS_WQ_FLOW_STATS_FLOW_INACTIVE_TIMEOUT,
 					       node_p->hash, tns2s, 0xDEF, 0xDEF, node_p, hnode);
 
+			if (unlikely(!node_p)) {
+				rmnet_shs_crit_err[RMNET_SHS_INVALID_HNODE]++;
+				continue;
+			}
+			/* Low latency nodes need to be cleared from LL ht list with LL locking */
+			if (node_p->low_latency == RMNET_SHS_TRUE_LOW_LATENCY) {
+				lock_flag = 1;
+			}
+			if (lock_flag)
+				spin_lock_bh(&rmnet_shs_ll_ht_splock);
+
+			rm_err("SHS_FLOW: removing flow 0x%x on cpu[%d] "
+				   "pps: %llu avg_pps: %llu",
+				   hnode->hash, hnode->current_cpu,
+				   hnode->rx_pps, hnode->avg_pps);
 			/* Shouldn't be needed for LL flows as no parking is done*/
 			rmnet_shs_clear_node(node_p, RMNET_WQ_CTXT);
-
-			if (node_p) {
-			/* Low latency nodes need to be cleared from LL ht list with LL locking */
-				if (node_p->low_latency == RMNET_SHS_TRUE_LOW_LATENCY) {
-					spin_lock_bh(&rmnet_shs_ll_ht_splock);
-					rmnet_shs_cpu_node_remove(node_p);
-					hash_del_rcu(&node_p->list);
-					node_p->node_id.next = NULL;
-					node_p->node_id.prev = NULL;
-					kfree(node_p);
-					spin_unlock_bh(&rmnet_shs_ll_ht_splock);
-				}
-				else {
-					rmnet_shs_cpu_node_remove(node_p);
-					hash_del_rcu(&node_p->list);
-					node_p->node_id.next = NULL;
-					node_p->node_id.prev = NULL;
-					kfree(node_p);
-				}
-			}
-			rm_err("SHS_FLOW: removing flow 0x%x on cpu[%d] "
-			       "pps: %llu avg_pps: %llu",
-			       hnode->hash, hnode->current_cpu,
-			       hnode->rx_pps, hnode->avg_pps);
 			rmnet_shs_cpu_list_remove(hnode);
-			if (hnode->is_perm == 0 || force_clean) {
-				rmnet_shs_hstat_tbl_remove(hnode);
-				hnode->hstat_node_id.next = NULL;
-				hnode->hstat_node_id.prev = NULL;
-				kfree(hnode);
-			} else {
-				rmnet_shs_wq_hstat_reset_node(hnode);
-			}
+			rmnet_shs_cpu_node_remove(node_p);
+			rmnet_shs_hstat_tbl_remove(hnode);
+			hash_del_rcu(&node_p->list);
 			atomic_long_dec(&rmnet_shs_cfg.num_flows);
+			/* Unlocking temporarily to call synchronize RCU, can sync + be in bh*/
+			if (lock_flag)
+				spin_unlock_bh(&rmnet_shs_ll_ht_splock);
+			spin_unlock_bh(&rmnet_shs_ht_splock);
+			synchronize_rcu();
+			kfree(hnode);
+			kfree(node_p);
+			spin_lock_bh(&rmnet_shs_ht_splock);
 		}
 
 	}
 	spin_unlock_bh(&rmnet_shs_ht_splock);
-	rcu_read_unlock();
-
 }
 
 void rmnet_shs_wq_pause(void)
