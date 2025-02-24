@@ -45,6 +45,7 @@
 
 /* Insert newest first, last 4 bytes of the change id */
 static char *verinfo[] = {
+	"df14fa83",
 	"77ef4226",
 	"7025ca0f",
 	"20dd85e1",
@@ -55,7 +56,6 @@ static char *verinfo[] = {
 	"f855e9c0",
 	"0b140f5e",
 	"e619dd08",
-	"670244c5",
 };
 module_param_array(verinfo, charp, NULL, 0444);
 MODULE_PARM_DESC(verinfo, "Version of the driver");
@@ -1173,11 +1173,8 @@ static void rmnet_shs_flush_lock_table(u8 flsh, u8 ctxt)
 
 					}
 				}
-
 			}
-
 		}
-
 		/* If core is loaded set core flows as priority and
 		 * start a 10ms hard flush timer
 		 */
@@ -1189,7 +1186,6 @@ static void rmnet_shs_flush_lock_table(u8 flsh, u8 ctxt)
 				total_cpu_gro_flushed);
 
 			rmnet_shs_core_prio_check(cpu_num, BACKLOG_CHECK, 0);
-
 		}
 
 		if (rmnet_shs_cpu_node_tbl[cpu_num].parkedlen < 0)

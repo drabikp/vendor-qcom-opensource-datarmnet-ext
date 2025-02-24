@@ -135,6 +135,8 @@ static const struct proc_ops rmnet_shs_global_fops = {
 void rmnet_shs_wq_mem_update_global(void)
 {
 	struct rmnet_shs_wq_hstat_s *hnode = NULL;
+	struct rmnet_shs_skbn_s *node_p = NULL;
+
 	uint16_t idx = 0;
 	unsigned ip_len = 0;
 
@@ -169,37 +171,38 @@ void rmnet_shs_wq_mem_update_global(void)
 		global_flow[idx].trans_proto = hnode->skb_tport_proto;
 		global_flow[idx].is_ll_flow = hnode->low_latency == RMNET_SHS_LOW_LATENCY_MATCH;
 		global_flow[idx].is_ll_true_flow = hnode->low_latency == RMNET_SHS_TRUE_LOW_LATENCY;
-		global_flow[idx].is_l4s_flow = hnode->node->l4s;
 		global_flow[idx].rx_skbs = hnode->rx_skb;
 		global_flow[idx].rx_bytes = hnode->rx_bytes;
 		global_flow[idx].hw_coal_bytes = hnode->hw_coal_bytes;
 		global_flow[idx].hw_coal_bufsize = hnode->hw_coal_bufsize;
 		global_flow[idx].ack_thresh = hnode->ack_thresh;
-		if (hnode->node) {
-			global_flow[idx].ip_family = hnode->node->ip_fam;
-			ip_len = (hnode->node->ip_fam == SHSUSR_IPV4 )? 4 : 16;
+		node_p = rcu_dereference(hnode->node);
+		if (node_p != NULL) {
+			global_flow[idx].is_l4s_flow = node_p->l4s;
+			global_flow[idx].ip_family = node_p->ip_fam;
+			ip_len = (node_p->ip_fam == SHSUSR_IPV4 )? 4 : 16;
 			if (global_flow[idx].trans_proto == IPPROTO_TCP) {
-				global_flow[idx].sport = hnode->node->trans_hdr.tp.source;
-				global_flow[idx].dport = hnode->node->trans_hdr.tp.dest;
+				global_flow[idx].sport = node_p->trans_hdr.tp.source;
+				global_flow[idx].dport = node_p->trans_hdr.tp.dest;
 
 			} else if (global_flow[idx].trans_proto == IPPROTO_UDP) {
-				global_flow[idx].sport = hnode->node->trans_hdr.up.source;
-				global_flow[idx].dport = hnode->node->trans_hdr.up.dest;
+				global_flow[idx].sport = node_p->trans_hdr.up.source;
+				global_flow[idx].dport = node_p->trans_hdr.up.dest;
 			}
-			if (hnode->node->ip_fam == SHSUSR_IPV4 ) {
+			if (node_p->ip_fam == SHSUSR_IPV4 ) {
 
 				memcpy(&global_flow[idx].ip_src,
-					   &(hnode->node->ip_hdr.v4hdr.saddr),
+					   &(node_p->ip_hdr.v4hdr.saddr),
 					   ip_len);
 				memcpy(&global_flow[idx].ip_dest,
-					   &(hnode->node->ip_hdr.v4hdr.daddr),
+					   &(node_p->ip_hdr.v4hdr.daddr),
 					   ip_len);
-			} else if (hnode->node->ip_fam == SHSUSR_IPV6) {
+			} else if (node_p->ip_fam == SHSUSR_IPV6) {
 				memcpy(&global_flow[idx].ip_src,
-					   &(hnode->node->ip_hdr.v6hdr.saddr),
+					   &(node_p->ip_hdr.v6hdr.saddr),
 					   ip_len);
 				memcpy(&global_flow[idx].ip_dest,
-					   &(hnode->node->ip_hdr.v6hdr.daddr),
+					   &(node_p->ip_hdr.v6hdr.daddr),
 					   ip_len);
 			}
 		}
