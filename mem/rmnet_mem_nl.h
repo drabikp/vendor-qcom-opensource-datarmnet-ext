@@ -13,16 +13,17 @@ enum {
 	RMNET_MEM_ATTR_MODE,
 	RMNET_MEM_ATTR_POOL_SIZE,
 	RMNET_MEM_ATTR_INT,
+	RMNET_MEM_ATTR_STATS,
 	__RMNET_MEM_ATTR_MAX,
 };
 
 struct rmnet_memzone_req {
-        int zone;
-        int valid;
+	int zone;
+	int valid;
 };
 struct rmnet_pool_update_req {
-        unsigned poolsize[4];
-        unsigned valid_mask;
+	unsigned int poolsize[4];
+	unsigned int valid_mask;
 };
 
 int rmnet_mem_nl_register(void);
@@ -31,5 +32,6 @@ int rmnet_mem_nl_cmd_update_mode(struct sk_buff *skb, struct genl_info *info);
 int rmnet_mem_nl_cmd_update_pool_size(struct sk_buff *skb, struct genl_info *info);
 int rmnet_mem_nl_cmd_peak_pool_size(struct sk_buff *skb, struct genl_info *info);
 int rmnet_mem_genl_send_int_to_userspace_no_info(int val, struct genl_info *info);
+int rmnet_mem_nl_get_mem_stats(struct sk_buff *skb, struct genl_info *info);
 
 #endif /* _RMNET_MEM_GENL_H_ */

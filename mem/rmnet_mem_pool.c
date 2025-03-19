@@ -12,10 +12,6 @@
 #define RMNET_MEM_NL_SUCCESS 400
 #define RMNET_MEM_NL_FAIL 401
 
-extern struct delayed_work pool_adjust_work;
-extern struct workqueue_struct *mem_wq;
-
-
 int rmnet_mem_nl_cmd_update_mode(struct sk_buff *skb, struct genl_info *info)
 {
 	u8 mode = 0;
@@ -24,9 +20,9 @@ int rmnet_mem_nl_cmd_update_mode(struct sk_buff *skb, struct genl_info *info)
 
 	if (info->attrs[RMNET_MEM_ATTR_MODE]) {
 		na = info->attrs[RMNET_MEM_ATTR_MODE];
-		if (nla_memcpy(&mem_info, na, sizeof(mem_info)) > 0) {
+		if (nla_memcpy(&mem_info, na, sizeof(mem_info)) > 0)
 			rm_err("%s(): modeinfo %u\n", __func__, mem_info.zone);
-		}
+
 		rm_err("%s(): mode %u\n", __func__, mode);
 
 		rmnet_mem_genl_send_int_to_userspace_no_info(RMNET_MEM_NL_SUCCESS, info);
@@ -49,9 +45,9 @@ int rmnet_mem_nl_cmd_update_pool_size(struct sk_buff *skb, struct genl_info *inf
 
 	if (info->attrs[RMNET_MEM_ATTR_POOL_SIZE]) {
 		na = info->attrs[RMNET_MEM_ATTR_POOL_SIZE];
-		if (nla_memcpy(&mem_info, na, sizeof(mem_info)) > 0) {
+		if (nla_memcpy(&mem_info, na, sizeof(mem_info)) > 0)
 			rm_err("%s(): modeinfo %u\n", __func__, mem_info.valid_mask);
-		}
+
 
 		for (i = 0; i < POOL_LEN; i++) {
 			if (mem_info.valid_mask & 1 << i &&
@@ -64,9 +60,8 @@ int rmnet_mem_nl_cmd_update_pool_size(struct sk_buff *skb, struct genl_info *inf
 				max_pool_size[i] = mem_info.poolsize[i];
 				update_flag = 1;
 				/* If greater mem demands grab mem immediately */
-				if (!increase && mem_info.poolsize[i] > static_pool_size[i]) {
+				if (!increase && mem_info.poolsize[i] > static_pool_size[i])
 					increase = 1;
-				}
 			}
 		}
 		rm_err(" poolsize %d %d\n", mem_info.poolsize[2], mem_info.poolsize[3]);
@@ -74,7 +69,7 @@ int rmnet_mem_nl_cmd_update_pool_size(struct sk_buff *skb, struct genl_info *inf
 		if (update_flag && mem_wq) {
 			jiffies = msecs_to_jiffies(RAMP_DOWN_DELAY);
 			cancel_delayed_work_sync(&pool_adjust_work);
-			queue_delayed_work(mem_wq, &pool_adjust_work, (increase)? 0: jiffies);
+			queue_delayed_work(mem_wq, &pool_adjust_work, (increase) ? 0 : jiffies);
 		}
 
 		rmnet_mem_genl_send_int_to_userspace_no_info(RMNET_MEM_NL_SUCCESS, info);
@@ -96,9 +91,9 @@ int rmnet_mem_nl_cmd_peak_pool_size(struct sk_buff *skb, struct genl_info *info)
 
 	if (info->attrs[RMNET_MEM_ATTR_POOL_SIZE]) {
 		na = info->attrs[RMNET_MEM_ATTR_POOL_SIZE];
-		if (nla_memcpy(&mem_info, na, sizeof(mem_info)) > 0) {
+		if (nla_memcpy(&mem_info, na, sizeof(mem_info)) > 0)
 			rm_err("%s(): modeinfo %u\n", __func__, mem_info.valid_mask);
-		}
+
 
 		rm_err("%s(): pbind pool_size %u\n", __func__, mem_info.poolsize[3]);
 

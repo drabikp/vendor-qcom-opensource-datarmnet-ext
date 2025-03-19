@@ -21,16 +21,17 @@
 #define RMNET_MEM_DOWNGRADE -2
 #define RMNET_MEM_UPGRADE -3
 #define NS_IN_MS 1000000
+#define POWER_SAVE_NOTIF  0
 
 int rmnet_mem_unregister_notifier(struct notifier_block *nb);
 int rmnet_mem_register_notifier(struct notifier_block *nb);
 void rmnet_mem_pb_ind(void);
-int rmnet_mem_get_pool_size(unsigned order);
-
-extern struct rmnet_mem_notif_s rmnet_mem_notifier;
+int rmnet_mem_get_pool_size(unsigned int order);
+void rmnet_mem_cb(unsigned long event, void* data);
+void rmnet_mem_cache_add(unsigned int order, bool force);
 
 void rmnet_mem_put_page_entry(struct page *page);
-void rmnet_mem_page_ref_inc_entry(struct page *page, unsigned id);
-struct page* rmnet_mem_get_pages_entry(gfp_t gfp_mask, unsigned int order, int *code, int *pageorder, unsigned id);
+void rmnet_mem_page_ref_inc_entry(struct page *page, unsigned int id);
+struct page *rmnet_mem_get_pages_entry(gfp_t gfp_mask, unsigned int order, int *code, int *pageorder, unsigned int id);
 
 #endif
