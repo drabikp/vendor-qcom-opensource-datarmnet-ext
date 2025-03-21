@@ -29,18 +29,9 @@ MODULE_LICENSE("GPL v2");
 
 /* Insert newest first, last 4 bytes of the change id */
 static char *verinfo[] = {
+	"acaa7e6b",
 	"173bc5b9",
-	"71b2019d",
-	"1a5fa493",
-	"58aa9bee",
-	"8ab0a8ee",
-	"f22bace0",
-	"cc98f08a",
-	"ce79321c",
-	"5dcdd4c0",
-	"4c9b5337",
-	"a3babd40",
-	"7f078f96"
+	"db7d80fd",
 };
 
 #define RMNET_PERF_GENL_VERSION 1
@@ -745,13 +736,14 @@ int rmnet_perf_nl_cmd_map_cmd_req(struct sk_buff *skb, struct genl_info *info)
 	case QMAP_CMD_32:
 	case QMAP_CMD_40:
 	case QMAP_CMD_42:
+	case QMAP_CMD_44:
 		break;
 	default:
 		pr_err("%s(): Unsupported command %u\n", __func__, req->cmd_name);
 		goto err3;
 	}
 
-	if (!req->cmd_len || (req->cmd_len > 16000)) {
+	if (req->cmd_len > 16000) {
 		pr_err("%s(): Unsupported length %u\n", __func__, req->cmd_len);
 		goto err3;
 	}
