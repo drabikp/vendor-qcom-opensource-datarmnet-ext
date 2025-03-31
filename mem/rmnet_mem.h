@@ -6,11 +6,6 @@
 #ifndef _RMNET_MEM_H_
 #define _RMNET_MEM_H_
 
-#include <linux/kernel.h>
-#include <linux/netdevice.h>
-#include <linux/module.h>
-#include <linux/mm.h>
-
 #define IPA_ID 1
 #define RMNET_CORE_ID 2
 

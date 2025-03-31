@@ -3,11 +3,7 @@
  * Copyright (c) 2023-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
-#include "rmnet_mem_nl.h"
 #include "rmnet_mem_priv.h"
-
-#define MAX_POOL 500
-#define DEF_PAGEO 3
 
 #define RMNET_MEM_NL_SUCCESS 400
 #define RMNET_MEM_NL_FAIL 401

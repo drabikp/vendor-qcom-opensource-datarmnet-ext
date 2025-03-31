@@ -12,6 +12,7 @@ ifeq ($(call is-board-platform-in-list, $(RMNET_MEM_DLKM_PLATFORMS_LIST)),true)
 LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
+LOCAL_CFLAGS := -Wno-macro-redefined -Wno-unused-function -Wall -Werror
 #Enabling BAZEL
 LOCAL_MODULE_DDK_BUILD := true
 

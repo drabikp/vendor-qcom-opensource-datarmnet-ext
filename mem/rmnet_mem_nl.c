@@ -3,22 +3,12 @@
  * Copyright (c) 2023-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
-#include "rmnet_mem_nl.h"
+
 #include "rmnet_mem_priv.h"
 
 #define RMNET_MEM_GENL_FAMILY_NAME "RMNET_MEM"
 #define RMNET_MEM_GENL_VERSION 1
-
-enum {
-	RMNET_MEM_CMD_UNSPEC,
-	RMNET_MEM_CMD_UPDATE_MODE,
-	RMNET_MEM_CMD_UPDATE_POOL_SIZE,
-	RMNET_MEM_CMD_UPDATE_PEAK_POOL_SIZE,
-	RMNET_MEM_CMD_GET_MEM_STATS,
-	__RMNET_MEM_GENL_CMD_MAX,
-};
-
-#define RMNET_MEM_ATTR_MAX (__RMNET_MEM_ATTR_MAX - 1)
+#define RMNET_MEM_ATTR_MAX (RMNET_MEM_ATTR_STATS)
 
 uint32_t rmnet_mem_genl_seqnum;
 
