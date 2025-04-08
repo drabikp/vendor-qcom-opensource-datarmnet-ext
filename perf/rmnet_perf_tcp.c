@@ -701,7 +701,7 @@ int rmnet_perf_tcp_update_ecn_prob(u32 hash_key, u32 prob, bool should_drop)
 	int err;
 
 	xa_lock(&rmnet_perf_ecn_map);
-	node = __xa_store(&rmnet_perf_ecn_map, hash_key, NULL, GFP_KERNEL);
+	node = __xa_store(&rmnet_perf_ecn_map, hash_key, NULL, GFP_ATOMIC);
 	if (xa_is_err(node)) {
 		xa_unlock(&rmnet_perf_ecn_map);
 		return xa_err(node);
@@ -709,7 +709,7 @@ int rmnet_perf_tcp_update_ecn_prob(u32 hash_key, u32 prob, bool should_drop)
 
 	if (!node) {
 		/* Adding the node for the first time */
-		node = kzalloc(sizeof(*node), GFP_KERNEL);
+		node = kzalloc(sizeof(*node), GFP_ATOMIC);
 		if (!node) {
 			xa_unlock(&rmnet_perf_ecn_map);
 			return -ENOMEM;
@@ -728,7 +728,7 @@ int rmnet_perf_tcp_update_ecn_prob(u32 hash_key, u32 prob, bool should_drop)
 	node->prob = prob;
 	node->should_drop = should_drop;
 	err = xa_err(__xa_store(&rmnet_perf_ecn_map, hash_key, node,
-				GFP_KERNEL));
+				GFP_ATOMIC));
 	xa_unlock(&rmnet_perf_ecn_map);
 	if (err) {
 		kfree(node);
