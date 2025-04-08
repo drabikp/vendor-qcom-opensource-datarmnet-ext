@@ -218,8 +218,9 @@ void rmnet_mem_check_all(void)
 		j = 0;
 
 	}
-	pr_info("stat order 2: %d  order 3: %d", free_stats[2], free_stats[3]);
+	pr_info("free stat order 2: %d  order 3: %d", free_stats[2], free_stats[3]);
 	pr_info("cache status count order 2: %d  order 3: %d", cache_stats[2], cache_stats[3]);
+	pr_info("static count order 2: %d  order 3: %d", static_pool_size[2], static_pool_size[3]);
 }
 
 void rmnet_mem_replenish_all(void)
@@ -268,10 +269,8 @@ void rmnet_mem_cache_add(unsigned int order, bool force)
 	mem_info_s *mem_info;
 	int i = 0;
 	int cacheadd = 0;
-	int cacheflag = 0;
 
-	if (static_pool_size[order] &&
-		(force || cache_pool_size[order] < (static_pool_size[order] >> 2))) {
+	if (static_pool_size[order] && (force || !cache_pool_size[order])) {
 		list_for_each_safe(ptr, next, &rmnet_mem_pool[order]) {
 			mem_info = list_entry(ptr, mem_info_s, mem_head);
 			/* If node is not already in cache and free then add to cache list */
@@ -285,26 +284,26 @@ void rmnet_mem_cache_add(unsigned int order, bool force)
 				cacheadd++;
 				list_add(&mem_info->cache_head, &(rmnet_mem_cache[order]));
 				rmnet_mem_cache_adds[order]++;
-				cacheflag = 1;
-			} else {
-				cacheflag = 0;
 			}
-			/* Continue if lower than half of static pool */
-			if ((i++ > (static_pool_size[order] >> 1) ||
-				(cache_pool_size[order] > (static_pool_size[order] >> 1))) &&
-				!cacheflag) {
+			/* Stop if gone through half of pool or cache has grown past half */
+			if (i++ > (static_pool_size[order] >> 3) ||
+			    (cache_pool_size[order] > (static_pool_size[order] >> 3))) {
 				break;
 			}
 		}
-		if (!cacheadd)
+		/* If nothing found to add, move head of list */
+		if (!cacheadd) {
 			rmnet_mem_cache_add_fails[order]++;
+			if (!list_is_first(&mem_info->mem_head, &(rmnet_mem_pool[order])))
+				list_rotate_to_front(&mem_info->mem_head, &(rmnet_mem_pool[order]));
+		}
 
 	}
 }
 
 /* Freed by client so added back to pool */
 struct page *rmnet_mem_get_pages_entry(gfp_t gfp_mask, unsigned int order, int *code,
-									   int *pageorder, unsigned int id)
+				       int *pageorder, unsigned int id)
 {
 	unsigned long flags;
 	mem_info_s *mem_info;
@@ -322,8 +321,10 @@ struct page *rmnet_mem_get_pages_entry(gfp_t gfp_mask, unsigned int order, int *
 
 	rmnet_mem_id_req[id]++;
 	rmnet_mem_order_requests[order]++;
+	rmnet_mem_cache_add(order, false);
 
 	mem_info = list_first_entry_or_null(&rmnet_mem_cache[order], mem_info_s, cache_head);
+
 	if (mem_info) {
 		rmnet_mem_id_recycled[id]++;
 		rmnet_mem_order_recycled[order]++;
@@ -339,7 +340,6 @@ struct page *rmnet_mem_get_pages_entry(gfp_t gfp_mask, unsigned int order, int *
 
 		page_ref_inc(mem_info->addr);
 	}
-
 	/* Check high order for rmnet and lower order for IPA if matching order fails */
 	for (j = order, i = 0; !page && j > 0 && j < POOL_LEN; j++) {
 		do {
@@ -358,9 +358,6 @@ struct page *rmnet_mem_get_pages_entry(gfp_t gfp_mask, unsigned int order, int *
 				 */
 				if (!list_empty(&mem_info->cache_head))
 					list_del_init(&mem_info->cache_head);
-				/* Check if you can add more to the cache */
-				rmnet_mem_cache_add(j, false);
-
 				break;
 			}
 			list_rotate_left(&rmnet_mem_pool[j]);
@@ -372,7 +369,6 @@ struct page *rmnet_mem_get_pages_entry(gfp_t gfp_mask, unsigned int order, int *
 		}
 		i = 0;
 	}
-
 
 	if (static_pool_size[order] < max_pool_size[order] &&
 	    pool_unbound_feature[order]) {
@@ -407,15 +403,16 @@ struct page *rmnet_mem_get_pages_entry(gfp_t gfp_mask, unsigned int order, int *
 		} else {
 			/* Only call get page if we will add page to static pool*/
 			if (adding) {
+				if (rmnet_mem_debug)
+					rmnet_mem_check_all();
+
 				page = __dev_alloc_pages((adding) ? default_mask : gfp_mask, order);
 				if (page) {
 					rmnet_mem_add_page(page, order);
 					page_ref_inc(page);
 				}
-
 				if (pageorder)
 					*pageorder = order;
-
 			}
 		}
 	}
