@@ -19,6 +19,9 @@ define_mem("canoe", "perf")
 define_mem("vienna", "consolidate")
 define_mem("vienna", "perf")
 
+define_mem("lahaina", "consolidate")
+define_mem("lahaina", "perf")
+
 package(
 	default_visibility = [
 	"//visibility:public", ],
