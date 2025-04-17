@@ -1033,7 +1033,6 @@ void rmnet_shs_wq_exit(void)
 	if (!rmnet_shs_wq || !rmnet_shs_delayed_wq)
 		return;
 
-	rmnet_shs_wq_mem_deinit();
 	rmnet_shs_genl_send_int_to_userspace_no_info(RMNET_SHS_SYNC_WQ_EXIT);
 
 	trace_rmnet_shs_wq_high(RMNET_SHS_WQ_EXIT, RMNET_SHS_WQ_EXIT_START,
@@ -1060,8 +1059,6 @@ void rmnet_shs_wq_init(void)
 	 */
 	if (rmnet_shs_wq)
 		return;
-
-	rmnet_shs_wq_mem_init();
 
 	trace_rmnet_shs_wq_high(RMNET_SHS_WQ_INIT, RMNET_SHS_WQ_INIT_START,
 				0xDEF, 0xDEF, 0xDEF, 0xDEF, NULL, NULL);

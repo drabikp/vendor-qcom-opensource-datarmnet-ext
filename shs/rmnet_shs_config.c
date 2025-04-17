@@ -15,6 +15,7 @@
 #include "rmnet_shs_ll.h"
 #include "rmnet_shs_freq.h"
 #include "rmnet_shs_wq_genl.h"
+#include "rmnet_shs_wq_mem.h"
 #include "rmnet_shs_common.h"
 #include "rmnet_shs_modules.h"
 #include "rmnet_module.h"
@@ -44,6 +45,7 @@ int __init rmnet_shs_module_init(void)
 	if (rmnet_shs_wq_genl_init()) {
 		rm_err("%s", "SHS_GNL: Failed to init generic netlink");
 	}
+	rmnet_shs_wq_mem_init();
 
 	return register_netdevice_notifier(&rmnet_shs_dev_notifier);
 }
@@ -55,6 +57,7 @@ void __exit rmnet_shs_module_exit(void)
 			    0xDEF, 0xDEF, 0xDEF, 0xDEF, NULL, NULL);
 	unregister_netdevice_notifier(&rmnet_shs_dev_notifier);
 
+	rmnet_shs_wq_mem_deinit();
 	rmnet_shs_wq_genl_deinit();
 
 	pr_info("%s(): Exiting rmnet SHS module\n", __func__);
