@@ -8,24 +8,6 @@
 
 #include <net/genetlink.h>
 
-enum {
-	RMNET_MEM_ATTR_UNSPEC,
-	RMNET_MEM_ATTR_MODE,
-	RMNET_MEM_ATTR_POOL_SIZE,
-	RMNET_MEM_ATTR_INT,
-	RMNET_MEM_ATTR_STATS,
-	__RMNET_MEM_ATTR_MAX,
-};
-
-struct rmnet_memzone_req {
-	int zone;
-	int valid;
-};
-struct rmnet_pool_update_req {
-	unsigned int poolsize[4];
-	unsigned int valid_mask;
-};
-
 int rmnet_mem_nl_register(void);
 void rmnet_mem_nl_unregister(void);
 int rmnet_mem_nl_cmd_update_mode(struct sk_buff *skb, struct genl_info *info);

@@ -3,12 +3,7 @@
  * Copyright (c) 2023-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
-#include <linux/kernel.h>
-#include <linux/netdevice.h>
-#include <linux/module.h>
-#include <linux/mm.h>
-#include "rmnet_mem_nl.h"
-#include "rmnet_mem.h"
+
 #include "rmnet_mem_priv.h"
 
 MODULE_LICENSE("GPL v2");

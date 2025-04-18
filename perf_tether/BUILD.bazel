@@ -9,6 +9,3 @@ define_perf_tether("canoe", "perf")
 
 define_perf_tether("vienna", "consolidate")
 define_perf_tether("vienna", "perf")
-
-define_perf_tether("lahaina", "consolidate")
-define_perf_tether("lahaina", "perf")
