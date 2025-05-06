@@ -22,6 +22,7 @@
 #include "rmnet_map.h"
 #include "rmnet_qmap.h"
 
+#include "rmnet_perf.h"
 #include "rmnet_perf_tcp.h"
 #include "rmnet_perf_udp.h"
 
@@ -79,6 +80,22 @@ module_param_named(rmnet_perf_knob1, enable_udp, bool, 0644);
 #define RMNET_INGRESS_QUIC_PORT 443
 
 struct rmnet_perf_stats_store stats_store[17];
+
+/* Holds all ECN nodes. Synchronized using internal lock */
+static DEFINE_XARRAY(rmnet_perf_ecn_map);
+
+struct xarray *rmnet_perf_get_ecn_map(void)
+{
+	return &rmnet_perf_ecn_map;
+}
+
+static void rmnet_perf_ecn_node_free(struct rcu_head *head)
+{
+	struct rmnet_perf_ecn_node *node;
+
+	node = container_of(head, struct rmnet_perf_ecn_node, rcu);
+	kfree(node);
+}
 
 static inline bool rmnet_perf_is_quic_packet(struct udphdr *uh)
 {
@@ -246,6 +263,11 @@ int rmnet_perf_ingress_ecn_handle(struct sk_buff *skb)
 
 	if (proto == IPPROTO_TCP) {
 		if (rmnet_perf_ingress_tcp_ecn(skb, ip_len))
+			return 1;
+	}
+
+	if (proto == IPPROTO_UDP) {
+		if (rmnet_perf_ingress_udp_ecn(skb, ip_len))
 			return 1;
 	}
 
@@ -768,6 +790,49 @@ err0:
 	return ret;
 }
 
+static int rmnet_perf_tcp_update_ecn_prob(u32 hash_key, u32 prob, bool should_drop)
+{
+	struct rmnet_perf_ecn_node *node;
+	int err;
+
+	xa_lock(rmnet_perf_get_ecn_map());
+	node = __xa_store(rmnet_perf_get_ecn_map(), hash_key, NULL, GFP_ATOMIC);
+	if (xa_is_err(node)) {
+		xa_unlock(rmnet_perf_get_ecn_map());
+		return xa_err(node);
+	}
+
+	if (!node) {
+		/* Adding the node for the first time */
+		node = kzalloc(sizeof(*node), GFP_ATOMIC);
+		if (!node) {
+			xa_unlock(rmnet_perf_get_ecn_map());
+			return -ENOMEM;
+		}
+	}
+
+	if (!prob) {
+		/* 0 drop probability means we no longer need to store
+		 * this node and track it.
+		 */
+		call_rcu(&node->rcu, rmnet_perf_ecn_node_free);
+		xa_unlock(rmnet_perf_get_ecn_map());
+		return 0;
+	}
+
+	node->prob = prob;
+	node->should_drop = should_drop;
+	err = xa_err(__xa_store(rmnet_perf_get_ecn_map(), hash_key, node,
+				GFP_ATOMIC));
+	xa_unlock(rmnet_perf_get_ecn_map());
+	if (err) {
+		kfree(node);
+		return err;
+	}
+
+	return 0;
+}
+
 static int rmnet_perf_nl_cmd_ecn_update(struct sk_buff *skb,
 					struct genl_info *info)
 {
@@ -797,6 +862,25 @@ static int rmnet_perf_nl_cmd_ecn_update(struct sk_buff *skb,
 	return 0;
 }
 
+static int rmnet_perf_get_ecn_drops(u32 hash_key, u32 *drops)
+{
+	struct rmnet_perf_ecn_node *node;
+
+	if (!drops)
+		return -EINVAL;
+
+	rcu_read_lock();
+	node = xa_load(rmnet_perf_get_ecn_map(), hash_key);
+	if (node)
+		*drops = node->drops;
+
+	rcu_read_unlock();
+	if (!node)
+		return -ESRCH;
+
+	return 0;
+}
+
 static int rmnet_perf_nl_cmd_ecn_drop_stat(struct sk_buff *skb,
 					   struct genl_info *info)
 {
@@ -813,7 +897,7 @@ static int rmnet_perf_nl_cmd_ecn_drop_stat(struct sk_buff *skb,
 	}
 
 	hash_key = nla_get_u32(info->attrs[RMNET_PERF_ATTR_ECN_HASH]);
-	rc = rmnet_perf_tcp_get_ecn_drops(hash_key, &drops);
+	rc = rmnet_perf_get_ecn_drops(hash_key, &drops);
 	if (rc) {
 		GENL_SET_ERR_MSG(info, "Fetching drop count failed");
 		return rc;
@@ -911,10 +995,21 @@ err0:
 
 static void __exit rmnet_perf_exit(void)
 {
+	struct rmnet_perf_ecn_node *node;
+	unsigned long idx;
+
 	rmnet_perf_unset_hooks();
 	rmnet_perf_nl_unregister();
 	rmnet_perf_udp_exit();
 	rmnet_perf_tcp_exit();
+
+	xa_lock(rmnet_perf_get_ecn_map());
+	xa_for_each(rmnet_perf_get_ecn_map(), idx, node)
+		call_rcu(&node->rcu, rmnet_perf_ecn_node_free);
+
+	xa_unlock(rmnet_perf_get_ecn_map());
+	xa_destroy(rmnet_perf_get_ecn_map());
+
 	pr_info("%s(): exiting\n", __func__);
 }
 

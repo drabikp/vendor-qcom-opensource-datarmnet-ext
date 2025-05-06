@@ -20,6 +20,7 @@ def define_perf(target, variant):
         out = "rmnet_perf.ko",
         srcs = [
             "rmnet_perf_main.c",
+            "rmnet_perf.h",
             "rmnet_perf_tcp.c",
             "rmnet_perf_tcp.h",
             "rmnet_perf_udp.c",

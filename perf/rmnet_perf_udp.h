@@ -10,6 +10,7 @@
 
 void rmnet_perf_ingress_handle_udp(struct sk_buff *skb);
 void rmnet_perf_egress_handle_udp(struct sk_buff *skb);
+int rmnet_perf_ingress_udp_ecn(struct sk_buff *skb, int ip_len);
 int rmnet_perf_udp_init(void);
 void rmnet_perf_udp_exit(void);
 
