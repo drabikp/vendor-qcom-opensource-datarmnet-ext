@@ -19,6 +19,7 @@
 #include <net/sock.h>
 #include "rmnet_private.h"
 
+#include "rmnet_perf.h"
 #include "rmnet_perf_udp.h"
 
 /* How long to keep a node, in millisecs */
@@ -364,6 +365,51 @@ void rmnet_perf_egress_handle_udp(struct sk_buff *skb)
 	}
 
 	rcu_read_unlock();
+}
+
+/* Check for ECN handling on this packet, and possibly drop it */
+int rmnet_perf_ingress_udp_ecn(struct sk_buff *skb, int ip_len)
+{
+	struct rmnet_perf_ecn_node *node;
+	struct udphdr *uh, __uh;
+
+	rcu_read_lock();
+	node = xa_load(rmnet_perf_get_ecn_map(), skb->hash);
+	if (!node)
+		goto skip;
+
+	node->count++;
+	uh = skb_header_pointer(skb, ip_len, sizeof(*uh), &__uh);
+	if (!uh)
+		/* Well, we tried... */
+		goto skip;
+
+	if (node->count >= node->prob) {
+		node->count = 0;
+		node->drops++;
+		if (node->should_drop) {
+			kfree_skb(skb);
+			rcu_read_unlock();
+			return 1;
+		}
+
+		/* Try and set the ECN bits in the ip header. The stack expects
+		 * skb_network_header to work, so make sure it does.
+		 */
+		if (!pskb_may_pull(skb, ip_len)) {
+			/* Well, dropping it is... */
+			kfree_skb(skb);
+			rcu_read_unlock();
+			return 1;
+		}
+
+		/* You get to die another day */
+		INET_ECN_set_ce(skb);
+	}
+
+skip:
+	rcu_read_unlock();
+	return 0;
 }
 
 int rmnet_perf_udp_init(void)
