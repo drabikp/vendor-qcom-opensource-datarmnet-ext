@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2021, The Linux Foundation. All rights reserved.
- * Copyright (c) 2022-2023, 2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 
 #include <net/genetlink.h>
@@ -213,18 +213,17 @@ static int rmnet_wlan_genl_set_device(struct sk_buff *skb,
 	nla = info->attrs[RMNET_WLAN_GENL_ATTR_DEV];
 	net_type = nla_get_u8(info->attrs[RMNET_WLAN_GENL_ATTR_NET_TYPE]);
 
-	if(net_type != DATA_PATH_PROXY_NET_WLAN &&
-	   net_type != DATA_PATH_PROXY_NET_WWAN &&
-	   net_type != DATA_PATH_PROXY_NET_LBO) {
+	if (net_type != DATA_PATH_PROXY_NET_WLAN &&
+	    net_type != DATA_PATH_PROXY_NET_WWAN &&
+	    net_type != DATA_PATH_PROXY_NET_LBO) {
 		GENL_SET_ERR_MSG(info, "Network type not supported!");
 		return -EINVAL;
 	}
 
-	if(net_type == DATA_PATH_PROXY_NET_WWAN) {
+	if (net_type == DATA_PATH_PROXY_NET_WWAN)
 		err = rmnet_wwan_set_device(nla_data(nla), info);
-	} else {
+	else
 		err = rmnet_wlan_set_device(nla_data(nla), info);
-	}
 
 	return err;
 }
@@ -234,35 +233,31 @@ static int rmnet_wlan_genl_unset_device(struct sk_buff *skb,
 {
 	struct nlattr *nla;
 	int net_type;
-	int err;
+	int err = 0;
 
-	if(!info->attrs[RMNET_WLAN_GENL_ATTR_DEV] ||
-	   !info->attrs[RMNET_WLAN_GENL_ATTR_NET_TYPE]) {
-		GENL_SET_ERR_MSG(info,
-				 "Kernel error, unregistering notifier failed");
+	if (!info->attrs[RMNET_WLAN_GENL_ATTR_DEV] ||
+	    !info->attrs[RMNET_WLAN_GENL_ATTR_NET_TYPE]) {
+		GENL_SET_ERR_MSG(info, "Must specify device and network info");
 		return -EINVAL;
 	}
+
+	nla = info->attrs[RMNET_WLAN_GENL_ATTR_DEV];
 	net_type = nla_get_u8(info->attrs[RMNET_WLAN_GENL_ATTR_NET_TYPE]);
 
-    /* Still don't care about you */
-	nla = info->attrs[RMNET_WLAN_GENL_ATTR_DEV];
-
-	if(net_type != DATA_PATH_PROXY_NET_WLAN &&
-	   net_type != DATA_PATH_PROXY_NET_WWAN &&
-	   net_type != DATA_PATH_PROXY_NET_LBO) {
+	if (net_type != DATA_PATH_PROXY_NET_WLAN &&
+	    net_type != DATA_PATH_PROXY_NET_WWAN &&
+	    net_type != DATA_PATH_PROXY_NET_LBO) {
 		GENL_SET_ERR_MSG(info, "Network type not supported!");
 		return -EINVAL;
 	}
 
-	if(net_type == DATA_PATH_PROXY_NET_WWAN) {
-		err = rmnet_wwan_unset_device(nla_data(nla), info);
+	if (net_type == DATA_PATH_PROXY_NET_WWAN) {
+		if (!rmnet_wlan_strlcmp(rmnet_wwan_get_dev(), nla_data(nla), IFNAMSIZ))
+			err = rmnet_wwan_unset_device(nla_data(nla), info);
 	} else {
-		err = rmnet_wlan_unset_device(nla_data(nla), info);
+		if (!rmnet_wlan_strlcmp(rmnet_wlan_get_dev(), nla_data(nla), IFNAMSIZ))
+			err = rmnet_wlan_unset_device(nla_data(nla), info);
 	}
-
-	if (err)
-		GENL_SET_ERR_MSG(info,
-				 "Kernel error, unregistering notifier failed");
 
 	return err;
 }

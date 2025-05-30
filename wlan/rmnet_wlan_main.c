@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2021, The Linux Foundation. All rights reserved.
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 
 #include <linux/types.h>
@@ -25,17 +25,9 @@
 
 /* Insert newest first, last 4 bytes of the change id */
 static char *verinfo[] = {
-	"20b1aeb1",
-	"4c12af9c",
-	"a586fa1f",
-	"66dfa294",
-	"c203e699",
-	"b30ce266",
-	"58aa9bee",
-	"729ca737",
-	"f45422bd",
-	"02931fbf",
-	"21980dfb",
+	"235f48e1",
+	"354b71f2",
+	"db7d80fd",
 };
 module_param_array(verinfo, charp, NULL, 0444);
 MODULE_PARM_DESC(verinfo, "Version of the driver");
