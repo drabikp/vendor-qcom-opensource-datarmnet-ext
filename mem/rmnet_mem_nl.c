@@ -8,7 +8,7 @@
 
 #define RMNET_MEM_GENL_FAMILY_NAME "RMNET_MEM"
 #define RMNET_MEM_GENL_VERSION 1
-#define RMNET_MEM_ATTR_MAX (RMNET_MEM_ATTR_STATS)
+#define RMNET_MEM_ATTR_MAX (RMNET_MEM_ATTR_CONFIG)
 
 uint32_t rmnet_mem_genl_seqnum;
 
@@ -16,6 +16,8 @@ static struct nla_policy rmnet_mem_nl_policy[RMNET_MEM_ATTR_MAX + 1] = {
 	[RMNET_MEM_ATTR_MODE] =			NLA_POLICY_EXACT_LEN(sizeof(struct rmnet_memzone_req)),
 	[RMNET_MEM_ATTR_POOL_SIZE] =	NLA_POLICY_EXACT_LEN(sizeof(struct rmnet_pool_update_req)),
 	[RMNET_MEM_ATTR_STATS] =		NLA_POLICY_EXACT_LEN(sizeof(struct rmnet_mem_msg_info)),
+	[RMNET_MEM_ATTR_CONFIG] =		NLA_POLICY_EXACT_LEN(sizeof(uint32_t)),
+	/* Update the MAX when adding a new policy*/
 };
 
 static const struct genl_ops rmnet_mem_nl_ops[] = {
@@ -40,6 +42,16 @@ static const struct genl_ops rmnet_mem_nl_ops[] = {
 		/* Return internal stats to requester */
 		.cmd = RMNET_MEM_CMD_GET_MEM_STATS,
 		.doit = rmnet_mem_nl_get_mem_stats,
+	},
+	{
+		/* Set config of requester */
+		.cmd = RMNET_MEM_CMD_CONFIG_SET,
+		.doit = rmnet_mem_nl_cmd_config_set,
+	},
+	{
+		/* Set config of requester */
+		.cmd = RMNET_MEM_CMD_CONFIG_GET,
+		.doit = rmnet_mem_nl_cmd_config_get,
 	},
 };
 

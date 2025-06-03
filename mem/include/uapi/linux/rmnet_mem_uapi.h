@@ -18,6 +18,9 @@
 #define	RMNET_MEM_LL_LOW 6
 #define	RMNET_MEM_FREE_PAGE_SCHED 7
 #define	RMNET_MEM_LL_PAGE_SCHED 8
+#define	RMNET_MEM_STAT_CONFIG_SET 9
+#define	RMNET_MEM_ALLOC_FAILS 10
+
 #define	RMNET_MEM_STAT_MAX 15
 
 /* These parameters can't exceed 15 */
@@ -34,6 +37,8 @@
 #define	RMNET_MEM_CMD_UPDATE_POOL_SIZE 2
 #define	RMNET_MEM_CMD_UPDATE_PEAK_POOL_SIZE 3
 #define	RMNET_MEM_CMD_GET_MEM_STATS 4
+#define	RMNET_MEM_CMD_CONFIG_SET 5
+#define	RMNET_MEM_CMD_CONFIG_GET 6
 #define	RMNET_MEM_GENL_CMD_MAX 255
 
 /* Update RMNET_SHS_GENL_ATTR_MAX with the maximum value if a new entry is added */
@@ -42,6 +47,7 @@
 #define	RMNET_MEM_ATTR_POOL_SIZE 2
 #define	RMNET_MEM_ATTR_INT 3
 #define	RMNET_MEM_ATTR_STATS 4
+#define	RMNET_MEM_ATTR_CONFIG 5
 
 struct rmnet_memzone_req {
 	int32_t zone;

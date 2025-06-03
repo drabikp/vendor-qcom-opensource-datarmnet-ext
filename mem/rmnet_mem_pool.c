@@ -107,3 +107,49 @@ int rmnet_mem_nl_cmd_peak_pool_size(struct sk_buff *skb, struct genl_info *info)
 
 	return 0;
 }
+
+int rmnet_mem_nl_cmd_config_set(struct sk_buff *skb, struct genl_info *info)
+{
+	uint32_t config;
+	struct nlattr *na;
+	int prev_config;
+
+	rmnet_mem_stats[RMNET_MEM_STAT_CONFIG_SET]++;
+	if (info->attrs[RMNET_MEM_ATTR_CONFIG]) {
+		na = info->attrs[RMNET_MEM_ATTR_CONFIG];
+		if (nla_memcpy(&config, na, sizeof(config)) > 0)
+			rm_err("%s(): config %u\n", __func__, config);
+
+		rm_err("%s(): Setting ipa config %u\n", __func__, config);
+		prev_config = ipa_config;
+
+		if (DISABLE_STATIC_REDUCTION_F & config &&
+		    !(DISABLE_STATIC_REDUCTION_F & prev_config)) {
+			ipa_config = config;
+			/* Disable new feature and expect bigger static pool */
+			if(static_pool_size[STATIC_F_O3] == MID_POOL_O3 || !static_pool_size[STATIC_F_O3] ) {
+				target_pool_size[STATIC_F_O3] = OLD_MID_POOL_O3;
+				max_pool_size[STATIC_F_O3] = OLD_MID_POOL_O3;
+				cancel_delayed_work_sync(&pool_adjust_work);
+				queue_delayed_work(mem_wq, &pool_adjust_work, 0);
+			}
+			else if(target_pool_size[STATIC_F_O3] == MID_POOL_O3) {
+				target_pool_size[STATIC_F_O3] = OLD_MID_POOL_O3;
+				max_pool_size[STATIC_F_O3] = OLD_MID_POOL_O3;
+			}
+			rm_err("setting config 2 %x max pool %d target max %d", 1, max_pool_size[STATIC_F_O3],  target_pool_size[STATIC_F_O3]);
+		}
+		rmnet_mem_genl_send_int_to_userspace_no_info(RMNET_MEM_NL_SUCCESS, info);
+	} else {
+		rmnet_mem_genl_send_int_to_userspace_no_info(RMNET_MEM_NL_FAIL, info);
+	}
+
+	return 0;
+}
+
+
+int rmnet_mem_nl_cmd_config_get(struct sk_buff *skb, struct genl_info *info)
+{
+	rmnet_mem_genl_send_int_to_userspace_no_info(ipa_config, info);
+	return 0;
+}

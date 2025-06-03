@@ -15,5 +15,6 @@ int rmnet_mem_nl_cmd_update_pool_size(struct sk_buff *skb, struct genl_info *inf
 int rmnet_mem_nl_cmd_peak_pool_size(struct sk_buff *skb, struct genl_info *info);
 int rmnet_mem_genl_send_int_to_userspace_no_info(int val, struct genl_info *info);
 int rmnet_mem_nl_get_mem_stats(struct sk_buff *skb, struct genl_info *info);
-
+int rmnet_mem_nl_cmd_config_set(struct sk_buff *skb, struct genl_info *info);
+int rmnet_mem_nl_cmd_config_get(struct sk_buff *skb, struct genl_info *info);
 #endif /* _RMNET_MEM_GENL_H_ */

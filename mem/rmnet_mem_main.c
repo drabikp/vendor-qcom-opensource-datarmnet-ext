@@ -14,7 +14,7 @@ unsigned int rmnet_mem_debug __read_mostly;
 module_param(rmnet_mem_debug, uint, 0644);
 MODULE_PARM_DESC(rmnet_mem_debug, "rmnet_mem debug status");
 
-unsigned int rmnet_mem_pb_enable __read_mostly;
+unsigned int rmnet_mem_pb_enable __read_mostly = 1;
 module_param(rmnet_mem_pb_enable, uint, 0644);
 MODULE_PARM_DESC(rmnet_mem_pb_enable, "rmnet_mem_pb_enable pb ind pool boosts");
 
@@ -93,6 +93,13 @@ int pb_ind_pending;
 struct  hrtimer pb_timer;
 struct list_head rmnet_mem_pool[POOL_LEN];
 struct list_head rmnet_mem_cache[POOL_LEN];
+uint32_t ipa_config = 0;
+
+uint32_t rmnet_mem_config_query(unsigned int id)
+{
+	return ipa_config;
+}
+EXPORT_SYMBOL_GPL(rmnet_mem_config_query);
 
 void rmnet_mem_info_ref_inc_entry(struct page *page, unsigned int id)
 {
@@ -394,7 +401,10 @@ struct page *rmnet_mem_get_pages_entry(gfp_t gfp_mask, unsigned int order, int *
 				if (pageorder)
 					*pageorder = order;
 
+			} else {
+				rmnet_mem_stats[RMNET_MEM_ALLOC_FAILS]++;
 			}
+
 		} else {
 			/* Only call get page if we will add page to static pool*/
 			if (adding) {
@@ -405,7 +415,10 @@ struct page *rmnet_mem_get_pages_entry(gfp_t gfp_mask, unsigned int order, int *
 				if (page) {
 					rmnet_mem_add_page(page, order);
 					page_ref_inc(page);
+				} else {
+					rmnet_mem_stats[RMNET_MEM_ALLOC_FAILS]++;
 				}
+
 				if (pageorder)
 					*pageorder = order;
 			}
@@ -513,18 +526,22 @@ void rmnet_mem_adjust(unsigned int perm_size, u8 pageorder)
 		return;
 	}
 
-	adjustment = perm_size - static_pool_size[pageorder];
-	if (perm_size == static_pool_size[pageorder])
-		return;
-
 	spin_lock_irqsave(&rmnet_mem_lock, flags);
+	adjustment = perm_size - static_pool_size[pageorder];
+	if (perm_size == static_pool_size[pageorder]) {
+		spin_unlock_irqrestore(&rmnet_mem_lock, flags);
+		return;
+	}
+
 	rmnet_mem_cache_add(pageorder, false);
 	if (perm_size > static_pool_size[pageorder]) {
 		for (i = 0; i < (adjustment); i++) {
 			newpage = __dev_alloc_pages(default_mask, pageorder);
 
-			if (!newpage)
+			if (!newpage) {
+				rmnet_mem_stats[RMNET_MEM_ALLOC_FAILS]++;
 				continue;
+			}
 
 			mem_info = rmnet_mem_add_page(newpage, pageorder);
 

@@ -12,7 +12,6 @@
 #include <linux/mm.h>
 
 #include "rmnet_mem_nl.h"
-#include "rmnet_mem_nl.h"
 #include "rmnet_mem.h"
 #include "rmnet_mem_uapi.h"
 
@@ -24,6 +23,9 @@
 
 #define MID_POOL_O3 603
 #define MID_POOL_O2 190
+
+#define STATIC_F_O3 3
+#define OLD_MID_POOL_O3 600
 
 #define RAMP_DOWN_DELAY 3000
 #define PB_IND_DUR 105
@@ -55,7 +57,7 @@ void rmnet_mem_adjust(unsigned int perm_size, u8 order);
 extern struct rmnet_mem_notif_s rmnet_mem_notifier;
 extern struct delayed_work pool_adjust_work;
 extern struct workqueue_struct *mem_wq;
-
+extern uint32_t ipa_config;
 extern unsigned int rmnet_mem_debug;
 extern unsigned int rmnet_mem_pb_enable;
 extern int max_pool_size[POOL_LEN];
