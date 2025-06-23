@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2018-2021 The Linux Foundation. All rights reserved.
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 
 #include <net/sock.h>
@@ -45,6 +45,9 @@
 
 /* Insert newest first, last 4 bytes of the change id */
 static char *verinfo[] = {
+	"1eec38cc",
+	"ef0123a4",
+	"8ee8382a",
 	"df14fa83",
 	"77ef4226",
 	"7025ca0f",
@@ -1331,6 +1334,9 @@ static void rmnet_shs_chain_to_skb_list(struct sk_buff *skb,
 	if (!node->l4s)
 		node->l4s = rmnet_shs_is_skb_l4s(skb);
 
+	if (!node->ecn_capable)
+		node->ecn_capable = rmnet_shs_is_skb_ecn_capable(skb);
+
 	if (unlikely(pushflush))
 		rmnet_shs_flush_lock_table(0, RMNET_RX_CTXT);
 
@@ -2026,6 +2032,7 @@ int rmnet_shs_assign(struct sk_buff *skb, struct rmnet_shs_clnt_s *clnt_cfg)
 		/* Set ip header / transport header / transport proto */
 		rmnet_shs_get_update_skb_hdr_info(skb, node_p);
 		node_p->l4s = rmnet_shs_is_skb_l4s(skb);
+		node_p->ecn_capable = rmnet_shs_is_skb_ecn_capable(skb);
 
 		/* Workqueue utilizes some of the values from above
 		 * initializations . Therefore, we need to request
