@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only WITH Linux-syscall-note */
 /*
  * Copyright (c) 2019-2021 The Linux Foundation. All rights reserved.
- * Copyright (c) 2022-2023, 2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 
 #ifndef _RMNET_SHS_UAPI_H_
@@ -50,7 +50,7 @@ struct __attribute__((__packed__ ))  rmnet_shs_flow_entry_s {
 	__u8 is_ll_flow:1; // is SW low latency matched flow
 	__u8 is_l4s_flow:1; // seen packets marked with ECT(1)
 	__u8 is_ll_true_flow:1; // is using LL codepath, SW LL or HW LL
-	__u8 reserved_2:1;
+	__u8 ecn_capable:1; // seen packets marked with ECN or ECT
 
 	// packet/byte counters and some other values
 	__u64 rx_skbs;

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2020-2021 The Linux Foundation. All rights reserved.
- * Copyright (c) 2022-2023, 2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 
 #include "rmnet_shs.h"
@@ -417,10 +417,8 @@ void rmnet_shs_get_update_skb_hdr_info(struct sk_buff *skb,
 
 }
 
-int rmnet_shs_is_skb_l4s(struct sk_buff *skb)
+static u8 rmnet_shs_get_skb_dsfield(struct sk_buff *skb)
 {
-	u8 dsfield;
-
 	/* It's tempting to use the inet_ecn helpers for this, but as those
 	 * rely on skb->network_header being set and stuff being linear
 	 * (which might not be the case depending on the path this SKB took...)
@@ -435,8 +433,7 @@ int rmnet_shs_is_skb_l4s(struct sk_buff *skb)
 		if (!iph)
 			return 0;
 
-		dsfield = ipv4_get_dsfield(iph);
-		break;
+		return ipv4_get_dsfield(iph);
 	}
 	case __cpu_to_be16(ETH_P_IPV6):
 	{
@@ -446,15 +443,27 @@ int rmnet_shs_is_skb_l4s(struct sk_buff *skb)
 		if (!ip6h)
 			return 0;
 
-		dsfield = ipv6_get_dsfield(ip6h);
-		break;
+		return ipv6_get_dsfield(ip6h);
 	}
 	default:
 		return 0;
 	}
+}
+
+int rmnet_shs_is_skb_l4s(struct sk_buff *skb)
+{
+	u8 dsfield = rmnet_shs_get_skb_dsfield(skb);
 
 	/* L4S sets ECT(1) */
 	return !!((dsfield & 0x3) == 0x1);
+}
+
+int rmnet_shs_is_skb_ecn_capable(struct sk_buff *skb)
+{
+	u8 dsfield = rmnet_shs_get_skb_dsfield(skb);
+
+	/* Any non-zero value in the lower order bits means yes */
+	return !!(dsfield & 0x3);
 }
 
 /* Forms a new hash from the incoming hash based on the number of cores

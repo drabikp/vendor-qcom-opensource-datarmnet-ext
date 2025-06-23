@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * Copyright (c) 2018-2021 The Linux Foundation. All rights reserved.
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 
 #include <linux/skbuff.h>
@@ -198,6 +198,7 @@ struct rmnet_shs_skbn_s {
 	u8 low_latency;
 	u8 ll_flag;
 	u8 l4s;
+	u8 ecn_capable;
 
 	/*Is SHS enabled for this flow*/
 	u8 mux_id;

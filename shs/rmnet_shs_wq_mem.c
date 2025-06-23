@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * Copyright (c) 2021, The Linux Foundation. All rights reserved.
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 
 #include "rmnet_shs_modules.h"
@@ -179,6 +179,7 @@ void rmnet_shs_wq_mem_update_global(void)
 		node_p = rcu_dereference(hnode->node);
 		if (node_p != NULL) {
 			global_flow[idx].is_l4s_flow = node_p->l4s;
+			global_flow[idx].ecn_capable = node_p->ecn_capable;
 			global_flow[idx].ip_family = node_p->ip_fam;
 			ip_len = (node_p->ip_fam == SHSUSR_IPV4 )? 4 : 16;
 			if (global_flow[idx].trans_proto == IPPROTO_TCP) {

@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * Copyright (c) 2020 The Linux Foundation. All rights reserved.
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 
 #ifndef _RMNET_SHS_COMMON_H_
@@ -75,6 +75,7 @@ void rmnet_shs_get_update_skb_hdr_info(struct sk_buff *skb,
 void *rmnet_shs_header_ptr(struct sk_buff *skb, u32 offset, u32 hlen,
 				  void *buf);
 int rmnet_shs_is_skb_l4s(struct sk_buff *skb);
+int rmnet_shs_is_skb_ecn_capable(struct sk_buff *skb);
 u32 rmnet_shs_form_hash(u32 index, u32 maplen, u32 hash, u8 setasync);
 void rmnet_shs_deliver_skb(struct sk_buff *skb);
 void rmnet_shs_deliver_skb_wq(struct sk_buff *skb);
