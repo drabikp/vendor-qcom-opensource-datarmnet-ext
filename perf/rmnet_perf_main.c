@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
- * Copyright (c) 2021-2025, Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 
 #include <linux/module.h>
@@ -30,6 +30,10 @@ MODULE_LICENSE("GPL v2");
 
 /* Insert newest first, last 4 bytes of the change id */
 static char *verinfo[] = {
+	"f16980f6",
+	"fa851010",
+	"5ec3713c",
+	"e79ea282",
 	"acaa7e6b",
 	"173bc5b9",
 	"db7d80fd",
@@ -923,6 +927,22 @@ static int rmnet_perf_nl_cmd_ecn_drop_stat(struct sk_buff *skb,
 	return 0;
 }
 
+static int rmnet_perf_nl_cmd_ecn_flush(struct sk_buff *skb,
+				       struct genl_info *info)
+{
+	struct rmnet_perf_ecn_node *node;
+	unsigned long idx;
+
+	xa_lock(rmnet_perf_get_ecn_map());
+	xa_for_each(rmnet_perf_get_ecn_map(), idx, node) {
+		__xa_erase(rmnet_perf_get_ecn_map(), idx);
+		call_rcu(&node->rcu, rmnet_perf_ecn_node_free);
+	}
+
+	xa_unlock(rmnet_perf_get_ecn_map());
+	return 0;
+}
+
 static const struct genl_ops rmnet_perf_nl_ops[] = {
 	{
 		.cmd = RMNET_PERF_CMD_GET_STATS,
@@ -939,6 +959,10 @@ static const struct genl_ops rmnet_perf_nl_ops[] = {
 	{
 		.cmd = RMNET_PERF_CMD_ECN_DROP_STATS,
 		.doit = rmnet_perf_nl_cmd_ecn_drop_stat,
+	},
+	{
+		.cmd = RMNET_PERF_CMD_ECN_FLUSH,
+		.doit = rmnet_perf_nl_cmd_ecn_flush,
 	},
 };
 

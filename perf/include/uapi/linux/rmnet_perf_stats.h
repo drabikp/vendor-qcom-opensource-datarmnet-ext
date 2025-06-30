@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only WITH Linux-syscall-note */
 /*
- * Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 
 #ifndef __RMNET_PERF_STATS_H__
@@ -19,6 +19,7 @@
 #define RMNET_PERF_CMD_MAP_CMD 2
 #define RMNET_PERF_CMD_ECN_UPDATE 3
 #define RMNET_PERF_CMD_ECN_DROP_STATS 4
+#define RMNET_PERF_CMD_ECN_FLUSH 5
 
 /* Update RMNET_PERF_ATTR_MAX with the maximum value if a new entry is added */
 #define RMNET_PERF_ATTR_UNSPEC 0
