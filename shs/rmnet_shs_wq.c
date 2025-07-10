@@ -905,6 +905,15 @@ void rmnet_shs_wq_process_wq(struct work_struct *work)
 				0xDEF, 0xDEF, 0xDEF, 0xDEF, NULL, NULL);
 }
 
+static void rmnet_shs_hnode_free(struct rcu_head *head)
+{
+       struct rmnet_shs_wq_hstat_s *hnode;
+
+       hnode = container_of(head, struct rmnet_shs_wq_hstat_s, rcu);
+       kfree(hnode->node);
+       kfree(hnode);
+}
+
 void rmnet_shs_wq_cleanup_hash_tbl(u8 force_clean, u32 hash_to_clean)
 {
 	struct rmnet_shs_skbn_s *node_p = NULL;
@@ -912,7 +921,6 @@ void rmnet_shs_wq_cleanup_hash_tbl(u8 force_clean, u32 hash_to_clean)
 	struct rmnet_shs_wq_hstat_s *hnode = NULL;
 	struct list_head *ptr = NULL, *next = NULL;
 	int lock_flag = 0;
-       
 
 	spin_lock_bh(&rmnet_shs_ht_splock);
 	list_for_each_safe(ptr, next, &rmnet_shs_wq_hstat_tbl) {
@@ -968,11 +976,7 @@ void rmnet_shs_wq_cleanup_hash_tbl(u8 force_clean, u32 hash_to_clean)
 			/* Unlocking temporarily to call synchronize RCU, can sync + be in bh*/
 			if (lock_flag)
 				spin_unlock_bh(&rmnet_shs_ll_ht_splock);
-			spin_unlock_bh(&rmnet_shs_ht_splock);
-			synchronize_rcu();
-			kfree(hnode);
-			kfree(node_p);
-			spin_lock_bh(&rmnet_shs_ht_splock);
+			call_rcu(&hnode->rcu, rmnet_shs_hnode_free);
 		}
 
 	}
