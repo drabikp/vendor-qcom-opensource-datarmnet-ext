@@ -37,6 +37,7 @@ struct rmnet_shs_wq_hstat_s {
 	struct list_head cpu_node_id;
 	struct list_head hstat_node_id;
 	struct rmnet_shs_skbn_s *node; //back pointer to node
+	struct rcu_head rcu; /* Used to free struct*/
 	ktime_t c_epoch; /*current epoch*/
 	ktime_t l_epoch; /*last hash update epoch*/
 	ktime_t inactive_duration;
