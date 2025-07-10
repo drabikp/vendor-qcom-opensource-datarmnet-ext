@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * Copyright (c) 2019-2021 The Linux Foundation. All rights reserved.
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 
 #include "rmnet_shs.h"
@@ -44,6 +44,8 @@ void rmnet_shs_create_pause_msg_resp(uint8_t seq,
 				     struct rmnet_shs_msg_resp *msg_resp);
 void rmnet_shs_create_phy_msg_resp(struct rmnet_shs_msg_resp *msg_resp,
                                    uint8_t ocpu, uint8_t ncpu);
+
+void rmnet_shs_create_cleanup_msg_resp(struct rmnet_shs_msg_resp *msg_resp);
 
 /* Handler for message channel to shsusrd */
 int rmnet_shs_genl_msg_req_hdlr(struct sk_buff *skb_2,
