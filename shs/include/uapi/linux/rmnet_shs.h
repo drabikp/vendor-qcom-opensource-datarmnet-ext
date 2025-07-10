@@ -210,14 +210,19 @@ struct rmnet_shs_ping_boost_payload {
     __u8  perf_acq;      /* Set to 1 to aquire */
 };
 
+struct rmnet_shs_clean_payload {
+    __u8 seq; /* Reserved */
+};
+
 struct rmnet_shs_pause_payload {
-    __u8 seq; /* Duration to acquire perf lock */
+    __u8 seq; /*  Reserved */
 };
 
 #define RMNET_SHS_GENL_MSG_NOP 0
 #define RMNET_SHS_GENL_PING_BOOST_MSG 1
 #define RMNET_SHS_GENL_PHY_CHANGE_MSG 2
 #define RMNET_SHS_GENL_TRAFFIC_PAUSE_MSG 3
+#define RMNET_SHS_GENL_CLEANUP_MSG 4
 
 struct rmnet_shs_msg_info {
 	char     payload[RMNET_SHS_MSG_PAYLOAD_SIZE];

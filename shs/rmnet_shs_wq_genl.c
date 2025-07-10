@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2019-2021 The Linux Foundation. All rights reserved.
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 
 #include "rmnet_shs_modules.h"
@@ -857,6 +857,27 @@ void rmnet_shs_create_pause_msg_resp(uint8_t seq,
 	memcpy(&(msg_resp->list[0].payload),
 	       &pause_msg, sizeof(pause_msg));
 	msg_resp->list[0].msg_type = RMNET_SHS_GENL_TRAFFIC_PAUSE_MSG;
+
+	msg_resp->valid = 1;
+	msg_resp->list_len = 1;
+}
+
+void rmnet_shs_create_cleanup_msg_resp(struct rmnet_shs_msg_resp *msg_resp)
+{
+	struct rmnet_shs_clean_payload clean_msg;
+
+	if (msg_resp == NULL) {
+		rm_err("%s", "SHS_MSG_GNL - invalid input");
+		return;
+	}
+
+	memset(msg_resp, 0x0, sizeof(struct rmnet_shs_msg_resp));
+	memset(&clean_msg, 0x0, sizeof(clean_msg));
+
+	/* Copy to boost info into to the payload of first msg */
+	memcpy(&(msg_resp->list[0].payload),
+	       &clean_msg, sizeof(clean_msg));
+	msg_resp->list[0].msg_type = RMNET_SHS_GENL_CLEANUP_MSG;
 
 	msg_resp->valid = 1;
 	msg_resp->list_len = 1;

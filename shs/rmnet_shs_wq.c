@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2018-2021 The Linux Foundation. All rights reserved.
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 
 #include "rmnet_shs.h"
@@ -1029,12 +1029,15 @@ void rmnet_shs_wq_restart(void)
 
 void rmnet_shs_wq_exit(void)
 {
+	struct rmnet_shs_msg_resp chg_msg;
+
 	/*If Wq is not initialized, nothing to cleanup */
 	if (!rmnet_shs_wq || !rmnet_shs_delayed_wq)
 		return;
 
+	rmnet_shs_create_cleanup_msg_resp(&chg_msg);
+	rmnet_shs_genl_msg_direct_send_to_userspace(&chg_msg);
 	rmnet_shs_genl_send_int_to_userspace_no_info(RMNET_SHS_SYNC_WQ_EXIT);
-
 	trace_rmnet_shs_wq_high(RMNET_SHS_WQ_EXIT, RMNET_SHS_WQ_EXIT_START,
 				   0xDEF, 0xDEF, 0xDEF, 0xDEF, NULL, NULL);
 
