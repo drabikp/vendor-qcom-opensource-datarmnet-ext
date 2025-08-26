@@ -6,16 +6,16 @@ def define_shs(target, variant):
     include_base = "../../../{}".format(native.package_name())
 
     deps_shs = select({
-	"//build/kernel/kleaf:socrepo_true": [
+	"//build/qcom_build_extensions:qtisocrepo_true": [
 		"//soc-repo:all_headers",
 		"//soc-repo:{}/kernel/sched/walt/sched-walt".format(kernel_build_variant),
 	],
-	"//build/kernel/kleaf:socrepo_false": ["//msm-kernel:all_headers"],
+	"//build/qcom_build_extensions:qtisocrepo_false": ["//msm-kernel:all_headers"],
     })
 
     kernel_build = select({
-	"//build/kernel/kleaf:socrepo_true": "//soc-repo:{}_base_kernel".format(kernel_build_variant),
-	"//build/kernel/kleaf:socrepo_false": "//msm-kernel:{}".format(kernel_build_variant),
+	"//build/qcom_build_extensions:qtisocrepo_true": "//soc-repo:{}_base_kernel".format(kernel_build_variant),
+	"//build/qcom_build_extensions:qtisocrepo_false": "//msm-kernel:{}".format(kernel_build_variant),
     })
 
 
