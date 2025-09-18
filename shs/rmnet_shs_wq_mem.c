@@ -19,6 +19,7 @@ struct rmnet_shs_shared_mem_block_s rmnet_shs_wq_global_struct;
 struct rmnet_shs_mmap_info *global_shared;
 #define global_flow rmnet_shs_wq_global_struct.flow_entries
 #define global_blk_hdr rmnet_shs_wq_global_struct.blk_hdr
+#define ORDER4_PGSIZE ((1<<4) * 4096)
 
 static int rmnet_shs_mmap_global(struct file *filp, struct vm_area_struct *vma)
 {
@@ -30,6 +31,11 @@ static int rmnet_shs_mmap_global(struct file *filp, struct vm_area_struct *vma)
 	if (!global_shared || !global_shared->data) {
 		pr_err("rmnet_shs: null global shared %ld", size);
 		return 0;
+	}
+
+	if (size > ORDER4_PGSIZE) {
+		pr_err("rmnet_shs: invalid mmap size");
+		return -EINVAL;
 	}
 
 	page = virt_to_page(global_shared->data);
