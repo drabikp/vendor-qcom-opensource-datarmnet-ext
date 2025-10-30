@@ -28,7 +28,7 @@ def define_mem(target, variant):
             "rmnet_mem_priv.h",
          ],
         kernel_build = kernel_build,
-        deps = deps_mem + [":rmnet_mem_headers"],
+        deps = deps_mem + [":rmnet_mem_uapi_headers"],
         copts = ["-Wno-misleading-indentation"]
     )
 
