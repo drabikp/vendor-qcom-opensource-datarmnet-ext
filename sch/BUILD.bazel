@@ -9,3 +9,6 @@ define_sch("canoe", "perf")
 
 define_sch("vienna", "consolidate")
 define_sch("vienna", "perf")
+
+define_sch("chora", "consolidate")
+define_sch("chora", "perf")

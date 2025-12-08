@@ -10,6 +10,9 @@ define_aps("canoe", "perf")
 define_aps("vienna", "consolidate")
 define_aps("vienna", "perf")
 
+define_aps("chora", "consolidate")
+define_aps("chora", "perf")
+
 ddk_headers(
     name = "rmnet_aps_include_headers",
     hdrs = glob([

@@ -9,6 +9,9 @@ define_shs("vienna", "consolidate")
 define_shs("vienna", "perf")
 define_shs("lahaina", "consolidate")
 define_shs("lahaina", "perf")
+define_shs("chora", "consolidate")
+define_shs("chora", "perf")
+
 ddk_headers(
     name = "rmnet_shs_include_headers",
     hdrs = glob([

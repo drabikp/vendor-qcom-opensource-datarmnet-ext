@@ -5,6 +5,7 @@ ifneq ($(TARGET_BOARD_PLATFORM),qssi)
 RMNET_SCH_DLKM_PLATFORMS_LIST := sun
 RMNET_SCH_DLKM_PLATFORMS_LIST += canoe
 RMNET_SCH_DLKM_PLATFORMS_LIST += vienna
+RMNET_SCH_DLKM_PLATFORMS_LIST += chora
 
 ifeq ($(call is-board-platform-in-list, $(RMNET_SCH_DLKM_PLATFORMS_LIST)),true)
 LOCAL_PATH := $(call my-dir)

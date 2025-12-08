@@ -8,6 +8,7 @@ RMNET_WLAN_DLKM_PLATFORMS_LIST += vienna
 RMNET_WLAN_DLKM_PLATFORMS_LIST += monaco
 RMNET_WLAN_DLKM_PLATFORMS_LIST += lahaina
 RMNET_WLAN_DLKM_PLATFORMS_LIST += bengal
+RMNET_WLAN_DLKM_PLATFORMS_LIST += chora
 
 ifeq ($(call is-board-platform-in-list, $(RMNET_WLAN_DLKM_PLATFORMS_LIST)),true)
 LOCAL_PATH := $(call my-dir)

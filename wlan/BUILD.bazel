@@ -19,6 +19,9 @@ define_wlan("lahaina", "perf")
 define_wlan("bengal", "consolidate")
 define_wlan("bengal", "perf")
 
+define_wlan("chora", "consolidate")
+define_wlan("chora", "perf")
+
 ddk_headers(
     name = "rmnet_wlan_include_headers",
     hdrs = glob([

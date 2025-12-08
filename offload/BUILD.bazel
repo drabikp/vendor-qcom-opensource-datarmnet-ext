@@ -12,3 +12,6 @@ define_offload("vienna", "perf")
 
 define_offload("lahaina", "consolidate")
 define_offload("lahaina", "perf")
+
+define_offload("chora", "consolidate")
+define_offload("chora", "perf")

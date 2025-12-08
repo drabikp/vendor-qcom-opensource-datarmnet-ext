@@ -13,6 +13,9 @@ define_perf("vienna", "perf")
 define_perf("lahaina", "consolidate")
 define_perf("lahaina", "perf")
 
+define_perf("chora", "consolidate")
+define_perf("chora", "perf")
+
 ddk_headers(
     name = "rmnet_perf_include_headers",
     hdrs = glob([
