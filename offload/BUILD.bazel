@@ -15,3 +15,6 @@ define_offload("lahaina", "perf")
 
 define_offload("chora", "consolidate")
 define_offload("chora", "perf")
+
+define_offload("malabar", "consolidate")
+define_offload("malabar", "perf")

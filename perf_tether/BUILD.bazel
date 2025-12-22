@@ -15,3 +15,6 @@ define_perf_tether("lahaina", "perf")
 
 define_perf_tether("chora", "consolidate")
 define_perf_tether("chora", "perf")
+
+define_perf_tether("malabar", "consolidate")
+define_perf_tether("malabar", "perf")

@@ -28,6 +28,9 @@ define_mem("bengal", "perf")
 define_mem("chora", "consolidate")
 define_mem("chora", "perf")
 
+define_mem("malabar", "consolidate")
+define_mem("malabar", "perf")
+
 package(
 	default_visibility = [
 	"//visibility:public", ],

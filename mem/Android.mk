@@ -11,6 +11,7 @@ RMNET_MEM_DLKM_PLATFORMS_LIST += vienna
 RMNET_MEM_DLKM_PLATFORMS_LIST += lahaina
 RMNET_MEM_DLKM_PLATFORMS_LIST += bengal
 RMNET_MEM_DLKM_PLATFORMS_LIST += chora
+RMNET_MEM_DLKM_PLATFORMS_LIST += malabar
 
 ifeq ($(call is-board-platform-in-list, $(RMNET_MEM_DLKM_PLATFORMS_LIST)),true)
 LOCAL_PATH := $(call my-dir)
