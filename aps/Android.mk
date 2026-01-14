@@ -6,6 +6,7 @@ RMNET_APS_DLKM_PLATFORMS_LIST := sun
 RMNET_APS_DLKM_PLATFORMS_LIST += canoe
 RMNET_APS_DLKM_PLATFORMS_LIST += vienna
 RMNET_APS_DLKM_PLATFORMS_LIST += chora
+RMNET_APS_DLKM_PLATFORMS_LIST += malabar
 
 ifeq ($(call is-board-platform-in-list, $(RMNET_APS_DLKM_PLATFORMS_LIST)),true)
 LOCAL_PATH := $(call my-dir)

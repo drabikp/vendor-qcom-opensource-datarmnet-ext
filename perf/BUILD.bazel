@@ -16,6 +16,9 @@ define_perf("lahaina", "perf")
 define_perf("chora", "consolidate")
 define_perf("chora", "perf")
 
+define_perf("malabar", "consolidate")
+define_perf("malabar", "perf")
+
 ddk_headers(
     name = "rmnet_perf_include_headers",
     hdrs = glob([
