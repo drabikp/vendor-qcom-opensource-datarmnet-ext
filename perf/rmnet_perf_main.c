@@ -699,6 +699,7 @@ int rmnet_perf_cmd_xmit(struct rmnet_perf_map_cmd_req *cmd)
 					cmd->cmd_len);
 	cmd_hdr->cmd_name = cmd->cmd_name;
 	cmd_hdr->cmd_type = cmd->ack;
+	pr_err("%s(): Cmd %u sent from rmnet_perf",__func__,cmd_hdr->cmd_name);
 
 	cmd_content = (char *)(skb->data + sizeof(struct qmap_cmd_hdr));
 	memcpy(cmd_content, cmd->cmd_content, cmd->cmd_len);
