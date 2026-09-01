@@ -2,6 +2,14 @@
 RMNET_PERF_SELECT := CONFIG_RMNET_PERF=m
 KBUILD_OPTIONS += $(RMNET_PERF_SELECT)
 KBUILD_OPTIONS += $(KBUILD_EXTRA) # Extra config if any
+# NOTE: KBUILD_EXTRA_SYMBOLS below uses := (immediate expansion), so this MUST
+# be defined ABOVE it -- a later assignment is captured too late. It is also
+# passed as a bare GOAL in the all: recipe, so an empty value yields
+# ".../offload/../..//Module.symvers" and "No rule to make target".
+# Motorola's Android.mk supplies this; kernel.mk does not.
+DATARMNET_CORE_PATH ?= datarmnet/core
+# perf additionally links shs (rmnet_shs) -- same immediate-expansion rule.
+DATARMNET_SHS_PATH ?= datarmnet-ext/shs
 KBUILD_EXTRA_SYMBOLS := $(M)/../../$(DATARMNET_CORE_PATH)/Module.symvers
 KBUILD_EXTRA_SYMBOLS += $(M)/../../$(DATARMNET_SHS_PATH)/Module.symvers
 
